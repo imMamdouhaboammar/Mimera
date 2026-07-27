@@ -121,3 +121,37 @@ test("persists evidence through the project boundary", async () => {
   expect(project.currentSession().id).toBe(sessionId);
   project.close();
 });
+
+
+test("records an evidence pack through one project operation", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+  });
+  const evidence = [
+    {
+      id: "pack-1",
+      payload: { kind: "dom" },
+      trust: "untrusted-reference" as const,
+      sourceUrl: "https://example.com",
+      capturedAt: "2026-07-27T10:01:00.000Z",
+      contentHash: "e".repeat(64),
+    },
+    {
+      id: "pack-2",
+      payload: { kind: "screenshot" },
+      trust: "untrusted-reference" as const,
+      sourceUrl: "https://example.com",
+      capturedAt: "2026-07-27T10:01:01.000Z",
+      contentHash: "f".repeat(64),
+    },
+  ];
+
+  expect(project.recordEvidenceBatch(evidence)).toEqual(evidence);
+  expect(project.listEvidence()).toEqual(evidence);
+  project.close();
+});

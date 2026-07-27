@@ -248,6 +248,11 @@ export class MimeraProject {
     return this.#store.putEvidence(session.id, input);
   }
 
+  recordEvidenceBatch<T>(inputs: readonly EvidenceEnvelope<T>[]): EvidenceEnvelope<T>[] {
+    const session = this.currentSession();
+    return this.#store.putEvidenceBatch(session.id, inputs);
+  }
+
   listEvidence<T = unknown>(): EvidenceEnvelope<T>[] {
     const session = this.currentSession();
     return this.#store.listEvidence<T>(session.id);
