@@ -73,6 +73,10 @@ export interface AdvanceSessionOptions {
   now?: string;
 }
 
+export interface CompleteReferenceCaptureOptions extends AdvanceSessionOptions {
+  actor: string;
+}
+
 export interface MimeraProjectStatus {
   projectId: string;
   targetRoot: string;
@@ -270,6 +274,22 @@ export class MimeraProject {
       auditEventCount: this.#store.listHookAudit(currentSession.id).length,
       nextStatuses: this.#machine.allowedTransitions(currentSession.status),
     };
+  }
+
+  async completeReferenceCapture<T>(
+    evidence: readonly EvidenceEnvelope<T>[],
+    options: CompleteReferenceCaptureOptions,
+  ): Promise<ReferenceSession> {
+    const current = this.currentSession();
+    const updated = await this.#machine.transition({
+      session: current,
+      nextStatus: "REFERENCE_CAPTURED",
+      expectedVersion: current.version,
+      actor: options.actor,
+      ...(options.correlationId ? { correlationId: options.correlationId } : {}),
+      ...(options.now ? { now: options.now } : {}),
+    });
+    return this.#store.commitSessionWithEvidence(updated, current.version, evidence);
   }
 
   async advance(

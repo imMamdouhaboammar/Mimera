@@ -155,3 +155,37 @@ test("records an evidence pack through one project operation", async () => {
   expect(project.listEvidence()).toEqual(evidence);
   project.close();
 });
+
+test("completes reference capture with guarded state and evidence in one operation", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+    now: "2026-07-27T10:00:00.000Z",
+  });
+  for (const status of ["PREFLIGHT", "PROJECT_PROFILED", "REFERENCE_AUTHORIZED"] as const) {
+    await project.advance(status, "workflow-orchestrator");
+  }
+  const evidence = [{
+    id: "capture-1",
+    payload: { kind: "dom" },
+    trust: "untrusted-reference" as const,
+    sourceUrl: "https://example.com",
+    capturedAt: "2026-07-27T10:03:00.000Z",
+    contentHash: "2".repeat(64),
+  }];
+
+  const session = await project.completeReferenceCapture(evidence, {
+    actor: "reference-capture-service",
+    correlationId: "capture-correlation",
+    now: "2026-07-27T10:04:00.000Z",
+  });
+
+  expect(session.status).toBe("REFERENCE_CAPTURED");
+  expect(project.currentSession().status).toBe("REFERENCE_CAPTURED");
+  expect(project.listEvidence()).toEqual(evidence);
+  project.close();
+});
