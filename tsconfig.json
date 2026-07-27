@@ -48,6 +48,12 @@
       ],
       "@mimera/reference-capture": [
         "packages/reference-capture/src/index.ts"
+      ],
+      "@mimera/project-inspector": [
+        "packages/project-inspector/src/index.ts"
+      ],
+      "@mimera/preflight": [
+        "packages/preflight/src/index.ts"
       ]
     }
   },

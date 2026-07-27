@@ -70,6 +70,15 @@
         "@mimera/state-machine": "workspace:*",
       },
     },
+    "packages/preflight": {
+      "name": "@mimera/preflight",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/contracts": "workspace:*",
+        "@mimera/core": "workspace:*",
+        "@mimera/project-inspector": "workspace:*",
+      },
+    },
     "packages/project-inspector": {
       "name": "@mimera/project-inspector",
       "version": "0.1.0",
@@ -115,6 +124,8 @@
     "@mimera/evidence-store": ["@mimera/evidence-store@workspace:packages/evidence-store"],
 
     "@mimera/hooks": ["@mimera/hooks@workspace:packages/hooks"],
+
+    "@mimera/preflight": ["@mimera/preflight@workspace:packages/preflight"],
 
     "@mimera/project-inspector": ["@mimera/project-inspector@workspace:packages/project-inspector"],
 

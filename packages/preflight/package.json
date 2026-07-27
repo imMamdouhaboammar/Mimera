@@ -1,0 +1,14 @@
+{
+  "name": "@mimera/preflight",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/contracts": "workspace:*",
+    "@mimera/core": "workspace:*",
+    "@mimera/project-inspector": "workspace:*"
+  }
+}
