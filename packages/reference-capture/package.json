@@ -1,0 +1,15 @@
+{
+  "name": "@mimera/reference-capture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/browser-lab": "workspace:*",
+    "@mimera/contracts": "workspace:*",
+    "@mimera/core": "workspace:*",
+    "@mimera/reference-policy": "workspace:*"
+  }
+}

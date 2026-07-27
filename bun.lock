@@ -74,6 +74,16 @@
       "name": "@mimera/python-bridge",
       "version": "0.1.0",
     },
+    "packages/reference-capture": {
+      "name": "@mimera/reference-capture",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/browser-lab": "workspace:*",
+        "@mimera/contracts": "workspace:*",
+        "@mimera/core": "workspace:*",
+        "@mimera/reference-policy": "workspace:*",
+      },
+    },
     "packages/reference-policy": {
       "name": "@mimera/reference-policy",
       "version": "0.1.0",
@@ -100,6 +110,8 @@
     "@mimera/hooks": ["@mimera/hooks@workspace:packages/hooks"],
 
     "@mimera/python-bridge": ["@mimera/python-bridge@workspace:packages/python-bridge"],
+
+    "@mimera/reference-capture": ["@mimera/reference-capture@workspace:packages/reference-capture"],
 
     "@mimera/reference-policy": ["@mimera/reference-policy@workspace:packages/reference-policy"],
 

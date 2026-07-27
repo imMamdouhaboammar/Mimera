@@ -45,6 +45,9 @@
       ],
       "@mimera/browser-lab": [
         "packages/browser-lab/src/index.ts"
+      ],
+      "@mimera/reference-capture": [
+        "packages/reference-capture/src/index.ts"
       ]
     }
   },
