@@ -105,6 +105,17 @@
         "@mimera/state-machine": "workspace:*",
       },
     },
+    "packages/implementation-workspace": {
+      "name": "@mimera/implementation-workspace",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/component-spec": "workspace:*",
+        "@mimera/contracts": "workspace:*",
+        "@mimera/core": "workspace:*",
+        "@mimera/hooks": "workspace:*",
+        "@mimera/project-tools": "workspace:*",
+      },
+    },
     "packages/preflight": {
       "name": "@mimera/preflight",
       "version": "0.1.0",
@@ -173,6 +184,8 @@
     "@mimera/evidence-store": ["@mimera/evidence-store@workspace:packages/evidence-store"],
 
     "@mimera/hooks": ["@mimera/hooks@workspace:packages/hooks"],
+
+    "@mimera/implementation-workspace": ["@mimera/implementation-workspace@workspace:packages/implementation-workspace"],
 
     "@mimera/preflight": ["@mimera/preflight@workspace:packages/preflight"],
 

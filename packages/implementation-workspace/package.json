@@ -1,0 +1,16 @@
+{
+  "name": "@mimera/implementation-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/component-spec": "workspace:*",
+    "@mimera/contracts": "workspace:*",
+    "@mimera/core": "workspace:*",
+    "@mimera/hooks": "workspace:*",
+    "@mimera/project-tools": "workspace:*"
+  }
+}

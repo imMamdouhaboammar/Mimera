@@ -66,6 +66,9 @@
       ],
       "@mimera/project-tools": [
         "packages/project-tools/src/index.ts"
+      ],
+      "@mimera/implementation-workspace": [
+        "packages/implementation-workspace/src/index.ts"
       ]
     }
   },
