@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type {
   EvidenceEnvelope,
   HostKind,
@@ -107,3 +108,62 @@ export interface CapturePageInput {
   outputDirectory: string;
   viewports: ViewportProfile[];
 }
+
+
+export const ViewportProfileSchema = z.object({
+  id: z.string().min(1),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  isMobile: z.boolean(),
+  deviceScaleFactor: z.number().positive().optional(),
+});
+
+export const DomNodeEvidenceSchema = z.object({
+  tag: z.string().min(1),
+  id: z.string().min(1).optional(),
+  classes: z.array(z.string()),
+  role: z.string().min(1).optional(),
+  ariaLabel: z.string().min(1).optional(),
+  dataComponent: z.string().min(1).optional(),
+  nearestComponent: z.string().min(1).optional(),
+  domPath: z.string().min(1),
+  text: z.string(),
+  visible: z.boolean(),
+  rect: z.object({
+    x: z.number(),
+    y: z.number(),
+    width: z.number().nonnegative(),
+    height: z.number().nonnegative(),
+  }),
+  styles: z.object({
+    display: z.string(),
+    position: z.string(),
+    color: z.string(),
+    backgroundColor: z.string(),
+    fontFamily: z.string(),
+    fontSize: z.string(),
+    fontWeight: z.string(),
+    lineHeight: z.string(),
+    gap: z.string(),
+    padding: z.string(),
+    margin: z.string(),
+    borderRadius: z.string(),
+  }),
+});
+
+export const DomSnapshotSchema = z.object({
+  title: z.string(),
+  url: z.string().url(),
+  lang: z.string(),
+  direction: z.string(),
+  bodyScrollHeight: z.number().nonnegative(),
+  nodes: z.array(DomNodeEvidenceSchema),
+});
+
+export const BrowserDomEvidencePayloadSchema = z.object({
+  schemaVersion: z.literal("1"),
+  kind: z.literal("dom"),
+  viewport: ViewportProfileSchema,
+  data: DomSnapshotSchema,
+});
+export type BrowserDomEvidencePayload = z.infer<typeof BrowserDomEvidencePayloadSchema>;

@@ -39,6 +39,7 @@
         "@mimera/hooks": "workspace:*",
         "@mimera/reference-policy": "workspace:*",
         "playwright": "1.61.0",
+        "zod": "^4.0.17",
       },
     },
     "packages/contracts": {
