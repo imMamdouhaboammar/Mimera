@@ -38,6 +38,9 @@
     "packages/hooks": {
       "name": "@mimera/hooks",
       "version": "0.1.0",
+      "dependencies": {
+        "@mimera/contracts": "workspace:*",
+      },
     },
     "packages/python-bridge": {
       "name": "@mimera/python-bridge",
