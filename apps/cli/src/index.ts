@@ -19,6 +19,11 @@ import {
   ProjectAlreadyInitializedError,
   ProjectNotInitializedError,
 } from "@mimera/core";
+import { PreflightService, PreflightStateError } from "@mimera/preflight";
+import {
+  ReferenceCaptureService,
+  ReferenceCaptureStateError,
+} from "@mimera/reference-capture";
 import {
   PythonRuntimeNotFoundError,
   PythonWorkerClient,
@@ -47,6 +52,12 @@ interface InitOptions extends JsonOption {
   python?: boolean;
   pythonCommand?: string;
   rightsAssertion?: string;
+}
+
+interface CaptureOptions extends JsonOption {
+  url?: string;
+  allowHttp?: boolean;
+  allowLocalhost?: boolean;
 }
 
 interface DoctorCheck {
@@ -255,6 +266,85 @@ export function createProgram(io: CliIo = defaultIo): Command {
     });
 
   program
+    .command("prepare")
+    .description("Inspect the target project and authorize the reference session")
+    .argument("[targetRoot]", "Target project root", ".")
+    .option("--json", "Print machine-readable JSON", false)
+    .action(async (targetRoot: string, options: JsonOption) => {
+      const project = await MimeraProject.open(targetRoot);
+      try {
+        const result = await new PreflightService().prepare(project);
+        const output = {
+          projectId: project.config.projectId,
+          sessionId: result.session.id,
+          status: result.session.status,
+          profile: result.profile,
+          evidenceCount: project.status().evidenceCount,
+        };
+        if (options.json) writeJson(io, output);
+        else {
+          io.stdout(
+            `Prepared ${output.sessionId}
+Status: ${output.status}
+Stack: ${result.profile.frameworks.join(", ") || "undetected"}
+`,
+          );
+        }
+      } finally {
+        project.close();
+      }
+    });
+
+  program
+    .command("capture")
+    .description("Capture desktop and mobile reference evidence")
+    .argument("[targetRoot]", "Target project root", ".")
+    .option("--url <url>", "Authorized reference URL. Defaults to the first session reference")
+    .option("--allow-http", "Allow an authorized non-HTTPS reference", false)
+    .option("--allow-localhost", "Allow HTTP loopback references for local fixtures", false)
+    .option("--json", "Print machine-readable JSON", false)
+    .action(async (targetRoot: string, options: CaptureOptions) => {
+      const project = await MimeraProject.open(targetRoot);
+      try {
+        const current = project.currentSession();
+        const url = options.url ?? current.referenceUrls[0];
+        if (!url) throw new InvalidArgumentError("The session has no reference URL to capture");
+        const service = new ReferenceCaptureService({
+          allowHttp: Boolean(options.allowHttp || options.allowLocalhost),
+          allowLoopback: Boolean(options.allowLocalhost),
+        });
+        const result = await service.capture(project, {
+          url,
+          viewports: [
+            { id: "desktop", width: 1440, height: 900, isMobile: false },
+            { id: "mobile", width: 390, height: 844, isMobile: true },
+          ],
+        });
+        const output = {
+          projectId: project.config.projectId,
+          sessionId: result.session.id,
+          status: result.session.status,
+          captureId: result.captureId,
+          outputDirectory: result.outputDirectory,
+          viewports: result.capture.captures.map((capture) => capture.viewport.id),
+          evidenceCount: project.status().evidenceCount,
+        };
+        if (options.json) writeJson(io, output);
+        else {
+          io.stdout(
+            `Captured ${output.viewports.join(", ")}
+Status: ${output.status}
+Evidence: ${output.evidenceCount}
+Artifacts: ${output.outputDirectory}
+`,
+          );
+        }
+      } finally {
+        project.close();
+      }
+    });
+
+  program
     .command("doctor")
     .description("Check Mimera runtime and project health")
     .argument("[targetRoot]", "Target project root", ".")
@@ -283,6 +373,9 @@ function errorCode(error: unknown): string {
   if (error instanceof ProjectAlreadyInitializedError) return "PROJECT_ALREADY_INITIALIZED";
   if (error instanceof ProjectNotInitializedError) return "PROJECT_NOT_INITIALIZED";
   if (error instanceof CurrentSessionNotFoundError) return "SESSION_NOT_FOUND";
+  if (error instanceof PreflightStateError || error instanceof ReferenceCaptureStateError) {
+    return "INVALID_STATE";
+  }
   if (error instanceof PythonRuntimeNotFoundError) return "PYTHON_NOT_FOUND";
   if (error instanceof PythonWorkerError) return error.code;
   if (error && typeof error === "object" && "name" in error && error.name === "ZodError") {

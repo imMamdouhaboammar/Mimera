@@ -13,6 +13,8 @@
     "@mimera/python-bridge": "workspace:*",
     "@mimera/state-machine": "workspace:*",
     "@mimera/core": "workspace:*",
-    "commander": "^14.0.0"
+    "commander": "^14.0.0",
+    "@mimera/preflight": "workspace:*",
+    "@mimera/reference-capture": "workspace:*"
   }
 }
