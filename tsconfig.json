@@ -60,6 +60,9 @@
       ],
       "@mimera/design-analysis": [
         "packages/design-analysis/src/index.ts"
+      ],
+      "@mimera/component-spec": [
+        "packages/component-spec/src/index.ts"
       ]
     }
   },

@@ -1,0 +1,17 @@
+{
+  "name": "@mimera/component-spec",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/browser-lab": "workspace:*",
+    "@mimera/contracts": "workspace:*",
+    "@mimera/core": "workspace:*",
+    "@mimera/design-dna": "workspace:*",
+    "@mimera/project-inspector": "workspace:*",
+    "zod": "^4.0.17"
+  }
+}

@@ -43,6 +43,18 @@
         "zod": "^4.0.17",
       },
     },
+    "packages/component-spec": {
+      "name": "@mimera/component-spec",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/browser-lab": "workspace:*",
+        "@mimera/contracts": "workspace:*",
+        "@mimera/core": "workspace:*",
+        "@mimera/design-dna": "workspace:*",
+        "@mimera/project-inspector": "workspace:*",
+        "zod": "^4.0.17",
+      },
+    },
     "packages/contracts": {
       "name": "@mimera/contracts",
       "version": "0.1.0",
@@ -138,6 +150,8 @@
     "@mimera/browser-lab": ["@mimera/browser-lab@workspace:packages/browser-lab"],
 
     "@mimera/cli": ["@mimera/cli@workspace:apps/cli"],
+
+    "@mimera/component-spec": ["@mimera/component-spec@workspace:packages/component-spec"],
 
     "@mimera/contracts": ["@mimera/contracts@workspace:packages/contracts"],
 
