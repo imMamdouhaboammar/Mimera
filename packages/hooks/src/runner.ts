@@ -6,19 +6,34 @@ import { HookRegistry } from "./registry.ts";
 
 const TERMINAL_DECISIONS = new Set<HookDecision["kind"]>(["deny", "ask", "defer"]);
 
-function stableDigest(value: unknown): string {
-  const seen = new WeakSet<object>();
-  const json = JSON.stringify(value, (_key, item) => {
-    if (typeof item === "bigint") return item.toString();
-    if (item && typeof item === "object") {
-      if (seen.has(item)) return "[Circular]";
-      seen.add(item);
-      if (!Array.isArray(item)) {
-        return Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)));
+function canonicalize(value: unknown, ancestors: WeakSet<object>): unknown {
+  if (typeof value === "bigint") return value.toString();
+  if (value === null || typeof value !== "object") return value;
+  if (ancestors.has(value)) return "[Circular]";
+
+  ancestors.add(value);
+  try {
+    if (value instanceof Date) return value.toISOString();
+    if (Array.isArray(value)) {
+      return value.map((item) => canonicalize(item, ancestors));
+    }
+    const normalized: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value).sort(([left], [right]) =>
+      left.localeCompare(right),
+    )) {
+      const canonical = canonicalize(item, ancestors);
+      if (canonical !== undefined && typeof canonical !== "function" && typeof canonical !== "symbol") {
+        normalized[key] = canonical;
       }
     }
-    return item;
-  });
+    return normalized;
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+function stableDigest(value: unknown): string {
+  const json = JSON.stringify(canonicalize(value, new WeakSet<object>()));
   return createHash("sha256").update(json ?? "undefined").digest("hex");
 }
 

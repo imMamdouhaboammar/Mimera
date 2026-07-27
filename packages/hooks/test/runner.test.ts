@@ -97,3 +97,23 @@ describe("HookRunner", () => {
     expect(audit.events[0]?.hookId).toBe("deny-first");
   });
 });
+
+test("audit digests serialize shared references like equivalent duplicated values", async () => {
+  const sharedValue = { token: "same" };
+  const sharedInput = { left: sharedValue, right: sharedValue };
+  const duplicatedInput = { left: { token: "same" }, right: { token: "same" } };
+  const hook = defineHook({
+    id: "digest-probe",
+    phases: ["pre-tool-call"],
+    layer: "platform-safety",
+    priority: 0,
+    run: () => ({ kind: "allow", reasonCode: "OK", message: "Allowed" }),
+  });
+  const sharedAudit = new InMemoryAuditSink();
+  const duplicatedAudit = new InMemoryAuditSink();
+
+  await new HookRunner({ hooks: [hook], auditSink: sharedAudit }).run({ ...context, input: sharedInput });
+  await new HookRunner({ hooks: [hook], auditSink: duplicatedAudit }).run({ ...context, input: duplicatedInput });
+
+  expect(sharedAudit.events[0]?.inputDigest).toBe(duplicatedAudit.events[0]?.inputDigest);
+});
