@@ -189,3 +189,50 @@ test("completes reference capture with guarded state and evidence in one operati
   expect(project.listEvidence()).toEqual(evidence);
   project.close();
 });
+
+test("completes evidence-backed stages atomically", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+    now: "2026-07-27T10:00:00.000Z",
+  });
+  await project.advance("PREFLIGHT", "preflight-service");
+  const evidence = [{
+    id: "project-profile-1",
+    payload: { framework: "vite" },
+    trust: "trusted-system" as const,
+    capturedAt: "2026-07-27T10:01:00.000Z",
+    contentHash: "3".repeat(64),
+  }];
+
+  const session = await project.completeStage("PROJECT_PROFILED", evidence, {
+    actor: "project-inspector",
+    correlationId: "profile-correlation",
+  });
+
+  expect(session.status).toBe("PROJECT_PROFILED");
+  expect(project.listEvidence()).toEqual(evidence);
+  project.close();
+});
+
+test("requires evidence for evidence-backed stage completion", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+  });
+  await project.advance("PREFLIGHT", "preflight-service");
+
+  await expect(
+    project.completeStage("PROJECT_PROFILED", [], { actor: "project-inspector" }),
+  ).rejects.toThrow("requires at least one evidence item");
+  expect(project.currentSession().status).toBe("PREFLIGHT");
+  project.close();
+});

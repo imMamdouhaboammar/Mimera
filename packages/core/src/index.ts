@@ -276,20 +276,31 @@ export class MimeraProject {
     };
   }
 
-  async completeReferenceCapture<T>(
+  async completeStage<T>(
+    nextStatus: SessionStatus,
     evidence: readonly EvidenceEnvelope<T>[],
     options: CompleteReferenceCaptureOptions,
   ): Promise<ReferenceSession> {
+    if (evidence.length === 0) {
+      throw new Error(`Stage ${nextStatus} requires at least one evidence item`);
+    }
     const current = this.currentSession();
     const updated = await this.#machine.transition({
       session: current,
-      nextStatus: "REFERENCE_CAPTURED",
+      nextStatus,
       expectedVersion: current.version,
       actor: options.actor,
       ...(options.correlationId ? { correlationId: options.correlationId } : {}),
       ...(options.now ? { now: options.now } : {}),
     });
     return this.#store.commitSessionWithEvidence(updated, current.version, evidence);
+  }
+
+  async completeReferenceCapture<T>(
+    evidence: readonly EvidenceEnvelope<T>[],
+    options: CompleteReferenceCaptureOptions,
+  ): Promise<ReferenceSession> {
+    return this.completeStage("REFERENCE_CAPTURED", evidence, options);
   }
 
   async advance(
