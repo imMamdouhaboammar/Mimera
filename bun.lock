@@ -70,6 +70,13 @@
         "@mimera/state-machine": "workspace:*",
       },
     },
+    "packages/project-inspector": {
+      "name": "@mimera/project-inspector",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "^4.0.17",
+      },
+    },
     "packages/python-bridge": {
       "name": "@mimera/python-bridge",
       "version": "0.1.0",
@@ -108,6 +115,8 @@
     "@mimera/evidence-store": ["@mimera/evidence-store@workspace:packages/evidence-store"],
 
     "@mimera/hooks": ["@mimera/hooks@workspace:packages/hooks"],
+
+    "@mimera/project-inspector": ["@mimera/project-inspector@workspace:packages/project-inspector"],
 
     "@mimera/python-bridge": ["@mimera/python-bridge@workspace:packages/python-bridge"],
 

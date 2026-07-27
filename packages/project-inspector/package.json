@@ -1,0 +1,12 @@
+{
+  "name": "@mimera/project-inspector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.0.17"
+  }
+}
