@@ -63,6 +63,9 @@
       ],
       "@mimera/component-spec": [
         "packages/component-spec/src/index.ts"
+      ],
+      "@mimera/project-tools": [
+        "packages/project-tools/src/index.ts"
       ]
     }
   },

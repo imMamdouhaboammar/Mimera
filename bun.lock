@@ -121,6 +121,14 @@
         "zod": "^4.0.17",
       },
     },
+    "packages/project-tools": {
+      "name": "@mimera/project-tools",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/contracts": "workspace:*",
+        "@mimera/hooks": "workspace:*",
+      },
+    },
     "packages/python-bridge": {
       "name": "@mimera/python-bridge",
       "version": "0.1.0",
@@ -169,6 +177,8 @@
     "@mimera/preflight": ["@mimera/preflight@workspace:packages/preflight"],
 
     "@mimera/project-inspector": ["@mimera/project-inspector@workspace:packages/project-inspector"],
+
+    "@mimera/project-tools": ["@mimera/project-tools@workspace:packages/project-tools"],
 
     "@mimera/python-bridge": ["@mimera/python-bridge@workspace:packages/python-bridge"],
 
