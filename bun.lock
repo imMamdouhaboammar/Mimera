@@ -31,6 +31,17 @@
       "name": "@mimera/contracts",
       "version": "0.1.0",
     },
+    "packages/core": {
+      "name": "@mimera/core",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/contracts": "workspace:*",
+        "@mimera/evidence-store": "workspace:*",
+        "@mimera/hooks": "workspace:*",
+        "@mimera/python-bridge": "workspace:*",
+        "@mimera/state-machine": "workspace:*",
+      },
+    },
     "packages/evidence-store": {
       "name": "@mimera/evidence-store",
       "version": "0.1.0",
@@ -63,6 +74,8 @@
     "@mimera/cli": ["@mimera/cli@workspace:apps/cli"],
 
     "@mimera/contracts": ["@mimera/contracts@workspace:packages/contracts"],
+
+    "@mimera/core": ["@mimera/core@workspace:packages/core"],
 
     "@mimera/evidence-store": ["@mimera/evidence-store@workspace:packages/evidence-store"],
 

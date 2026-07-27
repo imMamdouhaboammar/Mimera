@@ -1,0 +1,16 @@
+{
+  "name": "@mimera/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/contracts": "workspace:*",
+    "@mimera/evidence-store": "workspace:*",
+    "@mimera/hooks": "workspace:*",
+    "@mimera/python-bridge": "workspace:*",
+    "@mimera/state-machine": "workspace:*"
+  }
+}
