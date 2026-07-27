@@ -54,6 +54,9 @@
       ],
       "@mimera/preflight": [
         "packages/preflight/src/index.ts"
+      ],
+      "@mimera/design-dna": [
+        "packages/design-dna/src/index.ts"
       ]
     }
   },
