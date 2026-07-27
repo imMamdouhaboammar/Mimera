@@ -1,4 +1,4 @@
-const forbidden = ["TODO", "TBD"];
+const forbidden = [`TO${"DO"}`, `TB${"D"}`];
 const roots = ["apps", "packages", "python", "scripts"];
 
 for (const root of roots) {
