@@ -36,6 +36,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@mimera/contracts": "workspace:*",
+        "@mimera/hooks": "workspace:*",
       },
     },
     "packages/hooks": {

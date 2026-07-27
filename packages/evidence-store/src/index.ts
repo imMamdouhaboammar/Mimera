@@ -5,6 +5,7 @@ import {
   type EvidenceEnvelope,
   type ReferenceSession,
 } from "@mimera/contracts";
+import type { HookAuditEvent, HookAuditSink } from "@mimera/hooks";
 
 interface SessionRow {
   payload_json: string;
@@ -17,6 +18,26 @@ interface EvidenceRow {
   captured_at: string;
   content_hash: string;
   payload_json: string;
+}
+
+interface HookAuditRow {
+  id: string;
+  timestamp: string;
+  correlation_id: string;
+  session_id: string;
+  component_id: string | null;
+  agent_id: string | null;
+  host: HookAuditEvent["host"];
+  phase: HookAuditEvent["phase"];
+  operation: string;
+  hook_id: string;
+  policy_version: string;
+  input_digest: string;
+  decision: HookAuditEvent["decision"];
+  reason_code: string;
+  mutated_fields_json: string;
+  latency_ms: number;
+  timed_out: number;
 }
 
 export class DuplicateSessionError extends Error {
@@ -84,6 +105,30 @@ export class MimeraStore {
 
       CREATE INDEX IF NOT EXISTS evidence_session_capture_idx
         ON evidence(session_id, captured_at, id);
+
+      CREATE TABLE IF NOT EXISTS hook_audit (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT NOT NULL UNIQUE,
+        timestamp TEXT NOT NULL,
+        correlation_id TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        component_id TEXT,
+        agent_id TEXT,
+        host TEXT NOT NULL,
+        phase TEXT NOT NULL,
+        operation TEXT NOT NULL,
+        hook_id TEXT NOT NULL,
+        policy_version TEXT NOT NULL,
+        input_digest TEXT NOT NULL,
+        decision TEXT NOT NULL,
+        reason_code TEXT NOT NULL,
+        mutated_fields_json TEXT NOT NULL,
+        latency_ms REAL NOT NULL,
+        timed_out INTEGER NOT NULL CHECK(timed_out IN (0, 1))
+      );
+
+      CREATE INDEX IF NOT EXISTS hook_audit_session_sequence_idx
+        ON hook_audit(session_id, sequence);
     `);
     this.#database
       .query("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (?, ?)")
@@ -194,6 +239,68 @@ export class MimeraStore {
     return rows.map((row) => this.#parseEvidence<T>(row));
   }
 
+  appendHookAudit(event: HookAuditEvent): void {
+    this.#database
+      .query(
+        `INSERT INTO hook_audit(
+          id, timestamp, correlation_id, session_id, component_id, agent_id,
+          host, phase, operation, hook_id, policy_version, input_digest,
+          decision, reason_code, mutated_fields_json, latency_ms, timed_out
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        event.id,
+        event.timestamp,
+        event.correlationId,
+        event.sessionId,
+        event.componentId ?? null,
+        event.agentId ?? null,
+        event.host,
+        event.phase,
+        event.operation,
+        event.hookId,
+        event.policyVersion,
+        event.inputDigest,
+        event.decision,
+        event.reasonCode,
+        JSON.stringify(event.mutatedFields),
+        event.latencyMs,
+        event.timedOut ? 1 : 0,
+      );
+  }
+
+  listHookAudit(sessionId: string): HookAuditEvent[] {
+    const rows = this.#database
+      .query<HookAuditRow, [string]>(
+        `SELECT id, timestamp, correlation_id, session_id, component_id, agent_id,
+                host, phase, operation, hook_id, policy_version, input_digest,
+                decision, reason_code, mutated_fields_json, latency_ms, timed_out
+         FROM hook_audit
+         WHERE session_id = ?
+         ORDER BY sequence ASC`,
+      )
+      .all(sessionId);
+    return rows.map((row) => ({
+      id: row.id,
+      timestamp: row.timestamp,
+      correlationId: row.correlation_id,
+      sessionId: row.session_id,
+      ...(row.component_id ? { componentId: row.component_id } : {}),
+      ...(row.agent_id ? { agentId: row.agent_id } : {}),
+      host: row.host,
+      phase: row.phase,
+      operation: row.operation,
+      hookId: row.hook_id,
+      policyVersion: row.policy_version,
+      inputDigest: row.input_digest,
+      decision: row.decision,
+      reasonCode: row.reason_code,
+      mutatedFields: JSON.parse(row.mutated_fields_json) as string[],
+      latencyMs: row.latency_ms,
+      timedOut: row.timed_out === 1,
+    }));
+  }
+
   #parseEvidence<T>(row: EvidenceRow): EvidenceEnvelope<T> {
     return EvidenceEnvelopeSchema.parse({
       id: row.id,
@@ -207,5 +314,17 @@ export class MimeraStore {
 
   close(): void {
     this.#database.close();
+  }
+}
+
+export class SqliteHookAuditSink implements HookAuditSink {
+  readonly #store: MimeraStore;
+
+  constructor(store: MimeraStore) {
+    this.#store = store;
+  }
+
+  write(event: HookAuditEvent): void {
+    this.#store.appendHookAudit(event);
   }
 }
