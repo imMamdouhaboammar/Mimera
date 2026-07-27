@@ -46,6 +46,9 @@
     "packages/state-machine": {
       "name": "@mimera/state-machine",
       "version": "0.1.0",
+      "dependencies": {
+        "@mimera/contracts": "workspace:*",
+      },
     },
   },
   "packages": {
