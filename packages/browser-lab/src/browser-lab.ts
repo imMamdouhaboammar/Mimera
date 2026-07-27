@@ -110,9 +110,10 @@ export class BrowserLab {
       const capture = await this.#captureViewport(input, viewport);
       captures.push(capture);
       evidence.push(
-        await this.#ingestEvidence(input, "dom", capture.dom, capture.artifacts.dom.contentHash, capturedAt),
+        await this.#ingestEvidence(input, capture.viewport, "dom", capture.dom, capture.artifacts.dom.contentHash, capturedAt),
         await this.#ingestEvidence(
           input,
+          capture.viewport,
           "network",
           capture.network,
           capture.artifacts.network.contentHash,
@@ -120,6 +121,7 @@ export class BrowserLab {
         ),
         await this.#ingestEvidence(
           input,
+          capture.viewport,
           "screenshot",
           capture.artifacts.screenshot,
           capture.artifacts.screenshot.contentHash,
@@ -127,6 +129,7 @@ export class BrowserLab {
         ),
         await this.#ingestEvidence(
           input,
+          capture.viewport,
           "trace",
           capture.artifacts.trace,
           capture.artifacts.trace.contentHash,
@@ -275,6 +278,29 @@ export class BrowserLab {
         const style = getComputedStyle(element);
         const role = element.getAttribute("role");
         const ariaLabel = element.getAttribute("aria-label");
+        const dataComponent = element.getAttribute("data-component");
+        const nearestComponent = element.closest<HTMLElement>("[data-component]")?.getAttribute("data-component");
+        const pathParts: string[] = [];
+        let cursor: HTMLElement | null = element;
+        while (cursor && cursor !== document.documentElement) {
+          let part = cursor.tagName.toLowerCase();
+          if (cursor.id) {
+            part += `#${cursor.id}`;
+            pathParts.unshift(part);
+            break;
+          }
+          const component = cursor.getAttribute("data-component");
+          if (component) {
+            part += `[data-component="${component}"]`;
+          } else if (cursor.parentElement) {
+            const siblings = Array.from(cursor.parentElement.children).filter(
+              (sibling) => sibling.tagName === cursor!.tagName,
+            );
+            if (siblings.length > 1) part += `:nth-of-type(${siblings.indexOf(cursor) + 1})`;
+          }
+          pathParts.unshift(part);
+          cursor = cursor.parentElement;
+        }
         const visible =
           style.display !== "none" &&
           style.visibility !== "hidden" &&
@@ -287,6 +313,9 @@ export class BrowserLab {
           classes: Array.from(element.classList),
           ...(role ? { role } : {}),
           ...(ariaLabel ? { ariaLabel } : {}),
+          ...(dataComponent ? { dataComponent } : {}),
+          ...(nearestComponent ? { nearestComponent } : {}),
+          domPath: pathParts.join(" > "),
           text: (element.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 500),
           visible,
           rect: {
@@ -324,14 +353,20 @@ export class BrowserLab {
 
   async #ingestEvidence(
     input: CapturePageInput,
-    kind: string,
+    viewport: ViewportProfile,
+    kind: "dom" | "network" | "screenshot" | "trace",
     payload: unknown,
     contentHash: string,
     capturedAt: string,
   ): Promise<EvidenceEnvelope> {
     const raw: EvidenceEnvelope = {
-      id: `${kind}-${crypto.randomUUID()}`,
-      payload,
+      id: `${kind}-${viewport.id}-${crypto.randomUUID()}`,
+      payload: {
+        schemaVersion: "1",
+        kind,
+        viewport,
+        data: payload,
+      },
       trust: "trusted-system",
       sourceUrl: input.url,
       capturedAt,

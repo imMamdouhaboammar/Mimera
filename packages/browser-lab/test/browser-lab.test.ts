@@ -82,10 +82,18 @@ describe("BrowserLab", () => {
       const mobile = result.captures.find((capture) => capture.viewport.id === "mobile");
       expect(desktop?.title).toBe("Mimera Navbar Fixture");
       expect(desktop?.dom.nodes.find((node) => node.id === "main-nav")?.visible).toBe(true);
+      const navbarNode = desktop?.dom.nodes.find((node) => node.dataComponent === "navbar");
+      expect(navbarNode?.domPath).toContain("header");
+      expect(desktop?.dom.nodes.find((node) => node.id === "main-nav")?.nearestComponent).toBe("navbar");
       expect(mobile?.dom.nodes.find((node) => node.ariaLabel === "Open menu")?.visible).toBe(true);
       expect(mobile?.dom.nodes.find((node) => node.id === "main-nav")?.visible).toBe(false);
       expect(desktop?.network.some((event) => event.resourceType === "document")).toBe(true);
       expect(result.evidence.every((item) => item.trust === "untrusted-reference")).toBe(true);
+      const desktopDomEvidence = result.evidence.find((item) => {
+        const payload = item.payload as { kind?: string; viewport?: { id?: string } };
+        return payload.kind === "dom" && payload.viewport?.id === "desktop";
+      });
+      expect(desktopDomEvidence).toBeDefined();
       expect((await stat(desktop!.artifacts.screenshot.path)).size).toBeGreaterThan(100);
       expect((await stat(mobile!.artifacts.trace.path)).size).toBeGreaterThan(100);
     } finally {

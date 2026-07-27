@@ -28,6 +28,9 @@ export interface DomNodeEvidence {
   classes: string[];
   role?: string;
   ariaLabel?: string;
+  dataComponent?: string;
+  nearestComponent?: string;
+  domPath: string;
   text: string;
   visible: boolean;
   rect: {
@@ -79,6 +82,14 @@ export interface ViewportCapture {
     network: CaptureArtifact;
     trace: CaptureArtifact;
   };
+}
+
+
+export interface BrowserEvidencePayload<T = unknown> {
+  schemaVersion: "1";
+  kind: "dom" | "network" | "screenshot" | "trace";
+  viewport: ViewportProfile;
+  data: T;
 }
 
 export interface PageCaptureResult {
