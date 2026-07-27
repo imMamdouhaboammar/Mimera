@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
-    "lib": ["ESNext"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "target": "ESNext",
     "module": "Preserve",
     "moduleDetection": "force",
@@ -14,16 +17,40 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": true,
-    "types": ["bun"],
+    "types": [
+      "bun"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@mimera/contracts": ["packages/contracts/src/index.ts"],
-      "@mimera/core": ["packages/core/src/index.ts"],
-      "@mimera/state-machine": ["packages/state-machine/src/index.ts"],
-      "@mimera/hooks": ["packages/hooks/src/index.ts"],
-      "@mimera/evidence-store": ["packages/evidence-store/src/index.ts"],
-      "@mimera/python-bridge": ["packages/python-bridge/src/index.ts"]
+      "@mimera/contracts": [
+        "packages/contracts/src/index.ts"
+      ],
+      "@mimera/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@mimera/state-machine": [
+        "packages/state-machine/src/index.ts"
+      ],
+      "@mimera/hooks": [
+        "packages/hooks/src/index.ts"
+      ],
+      "@mimera/evidence-store": [
+        "packages/evidence-store/src/index.ts"
+      ],
+      "@mimera/python-bridge": [
+        "packages/python-bridge/src/index.ts"
+      ],
+      "@mimera/reference-policy": [
+        "packages/reference-policy/src/index.ts"
+      ],
+      "@mimera/browser-lab": [
+        "packages/browser-lab/src/index.ts"
+      ]
     }
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts", "scripts/**/*.ts"]
+  "include": [
+    "apps/**/*.ts",
+    "packages/**/*.ts",
+    "scripts/**/*.ts"
+  ]
 }

@@ -1,0 +1,15 @@
+{
+  "name": "@mimera/browser-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/contracts": "workspace:*",
+    "@mimera/hooks": "workspace:*",
+    "@mimera/reference-policy": "workspace:*",
+    "playwright": "1.61.0"
+  }
+}
