@@ -40,6 +40,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@mimera/contracts": "workspace:*",
+        "@mimera/state-machine": "workspace:*",
       },
     },
     "packages/python-bridge": {
