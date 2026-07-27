@@ -39,6 +39,7 @@ export interface TransitionGuardInput {
   expectedVersion: number;
   actor: string;
   correlationId: string;
+  evidenceCount: number;
 }
 
 export type TransitionGuard = (
@@ -52,6 +53,7 @@ export interface TransitionRequest {
   actor: string;
   correlationId?: string;
   now?: string;
+  evidenceCount?: number;
 }
 
 export class InvalidTransitionError extends Error {
@@ -124,6 +126,7 @@ export class SessionStateMachine {
         expectedVersion: request.expectedVersion,
         actor: request.actor,
         correlationId,
+        evidenceCount: request.evidenceCount ?? 0,
       });
       if (!decision.allowed) {
         throw new GuardDeniedError(decision.reasonCode, decision.message);

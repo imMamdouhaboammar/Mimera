@@ -290,6 +290,7 @@ export class MimeraProject {
       nextStatus,
       expectedVersion: current.version,
       actor: options.actor,
+      evidenceCount: evidence.length,
       ...(options.correlationId ? { correlationId: options.correlationId } : {}),
       ...(options.now ? { now: options.now } : {}),
     });

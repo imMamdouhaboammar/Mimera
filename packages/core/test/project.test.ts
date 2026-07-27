@@ -166,9 +166,21 @@ test("completes reference capture with guarded state and evidence in one operati
     python: { enabled: false },
     now: "2026-07-27T10:00:00.000Z",
   });
-  for (const status of ["PREFLIGHT", "PROJECT_PROFILED", "REFERENCE_AUTHORIZED"] as const) {
-    await project.advance(status, "workflow-orchestrator");
-  }
+  await project.advance("PREFLIGHT", "workflow-orchestrator");
+  await project.completeStage("PROJECT_PROFILED", [{
+    id: "profile-capture-test",
+    payload: { kind: "project-profile" },
+    trust: "trusted-system",
+    capturedAt: "2026-07-27T10:01:00.000Z",
+    contentHash: "7".repeat(64),
+  }], { actor: "project-inspector" });
+  await project.completeStage("REFERENCE_AUTHORIZED", [{
+    id: "auth-capture-test",
+    payload: { kind: "reference-authorization" },
+    trust: "trusted-user",
+    capturedAt: "2026-07-27T10:02:00.000Z",
+    contentHash: "8".repeat(64),
+  }], { actor: "reference-authorization-service" });
   const evidence = [{
     id: "capture-1",
     payload: { kind: "dom" },
@@ -186,7 +198,8 @@ test("completes reference capture with guarded state and evidence in one operati
 
   expect(session.status).toBe("REFERENCE_CAPTURED");
   expect(project.currentSession().status).toBe("REFERENCE_CAPTURED");
-  expect(project.listEvidence()).toEqual(evidence);
+  expect(project.listEvidence()).toHaveLength(3);
+  expect(project.listEvidence()).toContainEqual(evidence[0]!);
   project.close();
 });
 
@@ -234,5 +247,37 @@ test("requires evidence for evidence-backed stage completion", async () => {
     project.completeStage("PROJECT_PROFILED", [], { actor: "project-inspector" }),
   ).rejects.toThrow("requires at least one evidence item");
   expect(project.currentSession().status).toBe("PREFLIGHT");
+  project.close();
+});
+
+test("cannot bypass evidence-backed capture with advance", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+  });
+  await project.advance("PREFLIGHT", "preflight-service");
+  await project.completeStage("PROJECT_PROFILED", [{
+    id: "profile-guard",
+    payload: { kind: "project-profile" },
+    trust: "trusted-system",
+    capturedAt: "2026-07-27T10:00:01.000Z",
+    contentHash: "5".repeat(64),
+  }], { actor: "project-inspector" });
+  await project.completeStage("REFERENCE_AUTHORIZED", [{
+    id: "auth-guard",
+    payload: { kind: "reference-authorization" },
+    trust: "trusted-user",
+    capturedAt: "2026-07-27T10:00:02.000Z",
+    contentHash: "6".repeat(64),
+  }], { actor: "reference-authorization-service" });
+
+  await expect(
+    project.advance("REFERENCE_CAPTURED", "reference-capture-service"),
+  ).rejects.toThrow("requires evidence");
+  expect(project.currentSession().status).toBe("REFERENCE_AUTHORIZED");
   project.close();
 });

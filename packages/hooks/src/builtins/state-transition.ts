@@ -11,12 +11,29 @@ import {
 import { HookRunner } from "../runner.ts";
 import { defineHook } from "../registry.ts";
 
+
+const EVIDENCE_BACKED_STATUSES = new Set([
+  "PROJECT_PROFILED",
+  "REFERENCE_AUTHORIZED",
+  "REFERENCE_CAPTURED",
+  "PAGE_DECOMPOSED",
+  "COMPONENT_SPECIFIED",
+  "AUTOMATED_REVIEW",
+  "USER_REVIEW",
+  "APPROVED",
+  "LOCKED",
+  "PAGE_INTEGRATION",
+  "FINAL_VERIFICATION",
+  "COMPLETE",
+]);
+
 interface StateTransitionInput {
   currentStatus: unknown;
   nextStatus: unknown;
   expectedVersion: unknown;
   actualVersion: unknown;
   actor: unknown;
+  evidenceCount?: unknown;
 }
 
 export function createStateTransitionHook(machine = new SessionStateMachine()) {
@@ -70,6 +87,16 @@ export function createStateTransitionHook(machine = new SessionStateMachine()) {
           message: `Transition ${current.data} -> ${next.data} is not allowed`,
         };
       }
+      const evidenceCount = typeof input.evidenceCount === "number" && Number.isInteger(input.evidenceCount)
+        ? input.evidenceCount
+        : 0;
+      if (EVIDENCE_BACKED_STATUSES.has(next.data) && evidenceCount < 1) {
+        return {
+          kind: "deny",
+          reasonCode: "STATE_EVIDENCE_REQUIRED",
+          message: `Transition to ${next.data} requires evidence`,
+        };
+      }
       return {
         kind: "allow",
         reasonCode: "STATE_TRANSITION_ALLOWED",
@@ -100,6 +127,7 @@ export function createHookTransitionGuard(options: HookTransitionGuardOptions): 
         expectedVersion: input.expectedVersion,
         actualVersion: input.session.version,
         actor: input.actor,
+        evidenceCount: input.evidenceCount,
       },
       trustedScope: options.trustedScope,
       correlationId: input.correlationId,

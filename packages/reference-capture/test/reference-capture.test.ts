@@ -52,9 +52,21 @@ async function createProject(): Promise<MimeraProject> {
 
 test("captures and commits a complete responsive evidence pack", async () => {
   const project = await createProject();
-  for (const status of ["PREFLIGHT", "PROJECT_PROFILED", "REFERENCE_AUTHORIZED"] as const) {
-    await project.advance(status, "workflow-orchestrator");
-  }
+  await project.advance("PREFLIGHT", "workflow-orchestrator");
+  await project.completeStage("PROJECT_PROFILED", [{
+    id: "profile-reference-capture",
+    payload: { kind: "project-profile" },
+    trust: "trusted-system",
+    capturedAt: "2026-07-27T10:00:01.000Z",
+    contentHash: "9".repeat(64),
+  }], { actor: "project-inspector" });
+  await project.completeStage("REFERENCE_AUTHORIZED", [{
+    id: "auth-reference-capture",
+    payload: { kind: "reference-authorization" },
+    trust: "trusted-user",
+    capturedAt: "2026-07-27T10:00:02.000Z",
+    contentHash: "a".repeat(64),
+  }], { actor: "reference-authorization-service" });
   const service = new ReferenceCaptureService({
     allowHttp: true,
     allowLoopback: true,
@@ -71,7 +83,7 @@ test("captures and commits a complete responsive evidence pack", async () => {
 
   expect(result.session.status).toBe("REFERENCE_CAPTURED");
   expect(project.currentSession().status).toBe("REFERENCE_CAPTURED");
-  expect(project.listEvidence()).toHaveLength(8);
+  expect(project.listEvidence()).toHaveLength(10);
   expect(result.capture.captures).toHaveLength(2);
   expect((await stat(result.outputDirectory)).isDirectory()).toBe(true);
   project.close();

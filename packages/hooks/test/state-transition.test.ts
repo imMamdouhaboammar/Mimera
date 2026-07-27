@@ -68,3 +68,26 @@ describe("state transition enforcement", () => {
     expect(result.status).toBe("PREFLIGHT");
   });
 });
+
+test("denies evidence-backed transitions without an evidence pack", async () => {
+  const context: HookContext = {
+    sessionId: "session-1",
+    host: "codex",
+    phase: "pre-state-transition",
+    operation: "state.transition",
+    input: {
+      currentStatus: "REFERENCE_AUTHORIZED",
+      nextStatus: "REFERENCE_CAPTURED",
+      expectedVersion: 1,
+      actualVersion: 1,
+      actor: "reference-capture-service",
+      evidenceCount: 0,
+    },
+    trustedScope,
+    correlationId: "correlation-evidence",
+  };
+
+  const result = await new HookRunner({ hooks: [createStateTransitionHook()] }).run(context);
+  expect(result.decision.kind).toBe("deny");
+  expect(result.decision.reasonCode).toBe("STATE_EVIDENCE_REQUIRED");
+});
