@@ -80,6 +80,7 @@ export interface MimeraProjectStatus {
   python: PythonRuntimeConfig;
   evidenceCount: number;
   auditEventCount: number;
+  nextStatuses: readonly SessionStatus[];
 }
 
 function projectPaths(targetRoot: string): MimeraProjectPaths {
@@ -251,6 +252,7 @@ export class MimeraProject {
       python: structuredClone(this.#config.python),
       evidenceCount: this.#store.listEvidence(currentSession.id).length,
       auditEventCount: this.#store.listHookAudit(currentSession.id).length,
+      nextStatuses: this.#machine.allowedTransitions(currentSession.status),
     };
   }
 

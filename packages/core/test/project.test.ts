@@ -37,6 +37,7 @@ describe("MimeraProject", () => {
     expect(config.targetRoot).toBe(root);
     expect(config.currentSessionId).toBe(project.currentSession().id);
     expect(project.currentSession().status).toBe("CREATED");
+    expect(project.status().nextStatuses).toEqual(["PREFLIGHT"]);
     expect(project.status().python.enabled).toBe(true);
     project.close();
   });
