@@ -1,0 +1,15 @@
+{
+  "name": "@mimera/installer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/agent-runtime": "workspace:*",
+    "@mimera/contracts": "workspace:*",
+    "@mimera/host-adapters": "workspace:*",
+    "zod": "^4.0.17"
+  }
+}

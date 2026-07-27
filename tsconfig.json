@@ -72,6 +72,15 @@
       ],
       "@mimera/agent-runtime": [
         "packages/agent-runtime/src/index.ts"
+      ],
+      "@mimera/context-curator": [
+        "packages/context-curator/src/index.ts"
+      ],
+      "@mimera/host-adapters": [
+        "packages/host-adapters/src/index.ts"
+      ],
+      "@mimera/installer": [
+        "packages/installer/src/index.ts"
       ]
     }
   },

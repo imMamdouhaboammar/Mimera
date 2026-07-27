@@ -1,0 +1,16 @@
+{
+  "name": "@mimera/context-curator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/agent-runtime": "workspace:*",
+    "@mimera/component-spec": "workspace:*",
+    "@mimera/contracts": "workspace:*",
+    "@mimera/core": "workspace:*",
+    "zod": "^4.0.17"
+  }
+}
