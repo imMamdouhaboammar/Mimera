@@ -34,6 +34,9 @@
     "packages/evidence-store": {
       "name": "@mimera/evidence-store",
       "version": "0.1.0",
+      "dependencies": {
+        "@mimera/contracts": "workspace:*",
+      },
     },
     "packages/hooks": {
       "name": "@mimera/hooks",
