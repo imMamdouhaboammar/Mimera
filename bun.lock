@@ -21,10 +21,12 @@
       },
       "dependencies": {
         "@mimera/contracts": "workspace:*",
+        "@mimera/core": "workspace:*",
         "@mimera/evidence-store": "workspace:*",
         "@mimera/hooks": "workspace:*",
         "@mimera/python-bridge": "workspace:*",
         "@mimera/state-machine": "workspace:*",
+        "commander": "^14.0.0",
       },
     },
     "packages/contracts": {
