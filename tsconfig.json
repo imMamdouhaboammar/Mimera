@@ -69,6 +69,9 @@
       ],
       "@mimera/implementation-workspace": [
         "packages/implementation-workspace/src/index.ts"
+      ],
+      "@mimera/agent-runtime": [
+        "packages/agent-runtime/src/index.ts"
       ]
     }
   },

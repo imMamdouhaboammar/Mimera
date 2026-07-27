@@ -33,6 +33,15 @@
         "commander": "^14.0.0",
       },
     },
+    "packages/agent-runtime": {
+      "name": "@mimera/agent-runtime",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/contracts": "workspace:*",
+        "@mimera/hooks": "workspace:*",
+        "zod": "^4.0.17",
+      },
+    },
     "packages/browser-lab": {
       "name": "@mimera/browser-lab",
       "version": "0.1.0",
@@ -167,6 +176,8 @@
     },
   },
   "packages": {
+    "@mimera/agent-runtime": ["@mimera/agent-runtime@workspace:packages/agent-runtime"],
+
     "@mimera/browser-lab": ["@mimera/browser-lab@workspace:packages/browser-lab"],
 
     "@mimera/cli": ["@mimera/cli@workspace:apps/cli"],

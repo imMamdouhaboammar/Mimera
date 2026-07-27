@@ -1,0 +1,14 @@
+{
+  "name": "@mimera/agent-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/contracts": "workspace:*",
+    "@mimera/hooks": "workspace:*",
+    "zod": "^4.0.17"
+  }
+}
