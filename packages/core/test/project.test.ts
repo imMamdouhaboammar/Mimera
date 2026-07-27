@@ -93,3 +93,31 @@ describe("MimeraProject", () => {
     expect(MimeraProject.open(root)).rejects.toBeInstanceOf(ProjectNotInitializedError);
   });
 });
+
+test("persists evidence through the project boundary", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+    now: "2026-07-27T10:00:00.000Z",
+  });
+  const sessionId = project.currentSession().id;
+  const evidence = {
+    id: "evidence-1",
+    payload: { title: "Reference" },
+    trust: "untrusted-reference" as const,
+    sourceUrl: "https://example.com",
+    capturedAt: "2026-07-27T10:01:00.000Z",
+    contentHash: "c".repeat(64),
+  };
+
+  project.recordEvidence(evidence);
+
+  expect(project.listEvidence()).toEqual([evidence]);
+  expect(project.status().evidenceCount).toBe(1);
+  expect(project.currentSession().id).toBe(sessionId);
+  project.close();
+});

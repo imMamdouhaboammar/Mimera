@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import {
   MimeraConfigSchema,
   ReferenceSessionSchema,
+  type EvidenceEnvelope,
   type HighFidelityAuthorization,
   type HostKind,
   type MimeraConfig,
@@ -240,6 +241,16 @@ export class MimeraProject {
     const session = this.#store.getSession(sessionId);
     if (!session) throw new CurrentSessionNotFoundError(sessionId);
     return session;
+  }
+
+  recordEvidence<T>(input: EvidenceEnvelope<T>): EvidenceEnvelope<T> {
+    const session = this.currentSession();
+    return this.#store.putEvidence(session.id, input);
+  }
+
+  listEvidence<T = unknown>(): EvidenceEnvelope<T>[] {
+    const session = this.currentSession();
+    return this.#store.listEvidence<T>(session.id);
   }
 
   status(): MimeraProjectStatus {
