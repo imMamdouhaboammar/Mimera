@@ -14,6 +14,13 @@ import {
   type ReferenceMode,
 } from "@mimera/contracts";
 import {
+  ComponentNotFoundError,
+  ComponentSpecificationEvidenceMissingError,
+  ComponentSpecificationService,
+  ComponentSpecificationStateError,
+  StoredComponentSpecificationMissingError,
+} from "@mimera/component-spec";
+import {
   DesignAnalysisService,
   DesignAnalysisStateError,
   DesignEvidenceIncompleteError,
@@ -64,6 +71,10 @@ interface CaptureOptions extends JsonOption {
   url?: string;
   allowHttp?: boolean;
   allowLocalhost?: boolean;
+}
+
+interface SpecifyOptions extends JsonOption {
+  component: string;
 }
 
 interface DoctorCheck {
@@ -387,6 +398,50 @@ Responsive rules: ${output.responsiveRuleTypes.join(", ") || "none"}
     });
 
   program
+    .command("specify")
+    .description("Create an evidence-backed component contract and write scope")
+    .argument("[targetRoot]", "Target project root", ".")
+    .requiredOption("--component <id>", "Component id from the page decomposition")
+    .option("--json", "Print machine-readable JSON", false)
+    .action(async (targetRoot: string, options: SpecifyOptions) => {
+      const project = await MimeraProject.open(targetRoot);
+      try {
+        const result = await new ComponentSpecificationService().specify(project, {
+          componentId: options.component,
+        });
+        const output = {
+          projectId: project.config.projectId,
+          sessionId: result.session.id,
+          status: result.session.status,
+          pageId: result.spec.pageId,
+          componentId: result.spec.id,
+          componentName: result.spec.name,
+          targetFiles: result.spec.targetFiles,
+          allowedCommands: result.writeScope.allowedCommands,
+          responsiveRules: result.spec.responsiveContract.rules,
+          acceptanceCriteria: result.spec.acceptanceCriteria.map((criterion) => ({
+            id: criterion.id,
+            kind: criterion.kind,
+            required: criterion.required,
+          })),
+          evidenceCount: project.status().evidenceCount,
+        };
+        if (options.json) writeJson(io, output);
+        else {
+          io.stdout(
+            `Specified ${output.componentId}
+Status: ${output.status}
+Files: ${output.targetFiles.join(", ")}
+Commands: ${output.allowedCommands.join(", ") || "none"}
+`,
+          );
+        }
+      } finally {
+        project.close();
+      }
+    });
+
+  program
     .command("doctor")
     .description("Check Mimera runtime and project health")
     .argument("[targetRoot]", "Target project root", ".")
@@ -418,12 +473,16 @@ function errorCode(error: unknown): string {
   if (
     error instanceof PreflightStateError ||
     error instanceof ReferenceCaptureStateError ||
-    error instanceof DesignAnalysisStateError
+    error instanceof DesignAnalysisStateError ||
+    error instanceof ComponentSpecificationStateError
   ) {
     return "INVALID_STATE";
   }
   if (error instanceof DesignEvidenceIncompleteError) return "EVIDENCE_INCOMPLETE";
   if (error instanceof StoredDesignAnalysisMissingError) return "ANALYSIS_MISSING";
+  if (error instanceof ComponentNotFoundError) return "COMPONENT_NOT_FOUND";
+  if (error instanceof ComponentSpecificationEvidenceMissingError) return "EVIDENCE_MISSING";
+  if (error instanceof StoredComponentSpecificationMissingError) return "SPECIFICATION_MISSING";
   if (error instanceof PythonRuntimeNotFoundError) return "PYTHON_NOT_FOUND";
   if (error instanceof PythonWorkerError) return error.code;
   if (error && typeof error === "object" && "name" in error && error.name === "ZodError") {

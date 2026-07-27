@@ -20,6 +20,7 @@
         "mimera": "./src/index.ts",
       },
       "dependencies": {
+        "@mimera/component-spec": "workspace:*",
         "@mimera/contracts": "workspace:*",
         "@mimera/core": "workspace:*",
         "@mimera/design-analysis": "workspace:*",

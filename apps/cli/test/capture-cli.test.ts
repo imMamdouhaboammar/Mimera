@@ -112,4 +112,32 @@ test("runs init prepare capture and analysis from the CLI", async () => {
   expect(analyzed.signature.rhythmUnitPx).toBeGreaterThan(0);
   expect(analyzed.components).toEqual(["navbar", "main"]);
   expect(analyzed.responsiveRuleTypes).toContain("navigation-collapses-to-menu");
+
+  const specificationOutput = captureIo();
+  expect(await runCli([
+    "specify",
+    root,
+    "--component",
+    "navbar",
+    "--json",
+  ], specificationOutput)).toBe(0);
+  const specified = JSON.parse(specificationOutput.stdoutLines.join("")) as {
+    status: string;
+    componentId: string;
+    pageId: string;
+    targetFiles: string[];
+    allowedCommands: string[];
+    evidenceCount: number;
+  };
+
+  expect(specified.status).toBe("COMPONENT_SPECIFIED");
+  expect(specified.componentId).toBe("navbar");
+  expect(specified.pageId).toBe("home");
+  expect(specified.targetFiles).toEqual([
+    "src/components/Navbar.module.css",
+    "src/components/Navbar.test.tsx",
+    "src/components/Navbar.tsx",
+  ]);
+  expect(specified.allowedCommands).toEqual(["bun test"]);
+  expect(specified.evidenceCount).toBe(13);
 }, 30_000);
