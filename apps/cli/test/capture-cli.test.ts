@@ -45,7 +45,7 @@ function captureIo(): CliIo & { stdoutLines: string[]; stderrLines: string[] } {
   };
 }
 
-test("runs init prepare and responsive capture from the CLI", async () => {
+test("runs init prepare capture and analysis from the CLI", async () => {
   const root = await mkdtemp(join(tmpdir(), "mimera-cli-capture-"));
   directories.push(root);
   await writeFile(join(root, "package.json"), JSON.stringify({
@@ -96,4 +96,20 @@ test("runs init prepare and responsive capture from the CLI", async () => {
   expect(captured.evidenceCount).toBe(10);
   expect(captured.viewports).toEqual(["desktop", "mobile"]);
   expect(captured.outputDirectory.startsWith(join(root, ".mimera", "evidence"))).toBe(true);
+
+  const analysisOutput = captureIo();
+  expect(await runCli(["analyze", root, "--json"], analysisOutput)).toBe(0);
+  const analyzed = JSON.parse(analysisOutput.stdoutLines.join("")) as {
+    status: string;
+    evidenceCount: number;
+    signature: { rhythmUnitPx: number | null; cornerLanguage: string; density: string };
+    components: string[];
+    responsiveRuleTypes: string[];
+  };
+
+  expect(analyzed.status).toBe("PAGE_DECOMPOSED");
+  expect(analyzed.evidenceCount).toBe(12);
+  expect(analyzed.signature.rhythmUnitPx).toBeGreaterThan(0);
+  expect(analyzed.components).toEqual(["navbar", "main"]);
+  expect(analyzed.responsiveRuleTypes).toContain("navigation-collapses-to-menu");
 }, 30_000);

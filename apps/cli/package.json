@@ -15,6 +15,7 @@
     "@mimera/core": "workspace:*",
     "commander": "^14.0.0",
     "@mimera/preflight": "workspace:*",
-    "@mimera/reference-capture": "workspace:*"
+    "@mimera/reference-capture": "workspace:*",
+    "@mimera/design-analysis": "workspace:*"
   }
 }

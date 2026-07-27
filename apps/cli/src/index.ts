@@ -14,6 +14,12 @@ import {
   type ReferenceMode,
 } from "@mimera/contracts";
 import {
+  DesignAnalysisService,
+  DesignAnalysisStateError,
+  DesignEvidenceIncompleteError,
+  StoredDesignAnalysisMissingError,
+} from "@mimera/design-analysis";
+import {
   CurrentSessionNotFoundError,
   MimeraProject,
   ProjectAlreadyInitializedError,
@@ -345,6 +351,42 @@ Artifacts: ${output.outputDirectory}
     });
 
   program
+    .command("analyze")
+    .description("Extract design DNA and decompose the captured reference page")
+    .argument("[targetRoot]", "Target project root", ".")
+    .option("--json", "Print machine-readable JSON", false)
+    .action(async (targetRoot: string, options: JsonOption) => {
+      const project = await MimeraProject.open(targetRoot);
+      try {
+        const result = await new DesignAnalysisService().analyze(project);
+        const output = {
+          projectId: project.config.projectId,
+          sessionId: result.session.id,
+          status: result.session.status,
+          signature: result.analysis.dna.signature,
+          confidence: result.analysis.dna.confidence,
+          components: result.analysis.decomposition.components.map((component) => component.id),
+          responsiveRuleTypes: [
+            ...new Set(result.analysis.dna.responsiveRules.map((rule) => rule.type)),
+          ].sort(),
+          evidenceCount: project.status().evidenceCount,
+        };
+        if (options.json) writeJson(io, output);
+        else {
+          io.stdout(
+            `Analyzed ${output.sessionId}
+Status: ${output.status}
+Components: ${output.components.join(", ") || "none"}
+Responsive rules: ${output.responsiveRuleTypes.join(", ") || "none"}
+`,
+          );
+        }
+      } finally {
+        project.close();
+      }
+    });
+
+  program
     .command("doctor")
     .description("Check Mimera runtime and project health")
     .argument("[targetRoot]", "Target project root", ".")
@@ -373,9 +415,15 @@ function errorCode(error: unknown): string {
   if (error instanceof ProjectAlreadyInitializedError) return "PROJECT_ALREADY_INITIALIZED";
   if (error instanceof ProjectNotInitializedError) return "PROJECT_NOT_INITIALIZED";
   if (error instanceof CurrentSessionNotFoundError) return "SESSION_NOT_FOUND";
-  if (error instanceof PreflightStateError || error instanceof ReferenceCaptureStateError) {
+  if (
+    error instanceof PreflightStateError ||
+    error instanceof ReferenceCaptureStateError ||
+    error instanceof DesignAnalysisStateError
+  ) {
     return "INVALID_STATE";
   }
+  if (error instanceof DesignEvidenceIncompleteError) return "EVIDENCE_INCOMPLETE";
+  if (error instanceof StoredDesignAnalysisMissingError) return "ANALYSIS_MISSING";
   if (error instanceof PythonRuntimeNotFoundError) return "PYTHON_NOT_FOUND";
   if (error instanceof PythonWorkerError) return error.code;
   if (error && typeof error === "object" && "name" in error && error.name === "ZodError") {
