@@ -97,3 +97,39 @@ describe("evidence and pack contracts", () => {
     ).toThrow();
   });
 });
+
+import { MimeraConfigSchema, type MimeraConfig } from "../src/index.ts";
+
+describe("MimeraConfigSchema", () => {
+  test("accepts a local-first project configuration", () => {
+    const config: MimeraConfig = {
+      schemaVersion: "1",
+      projectId: "project-1",
+      targetRoot: "/tmp/target",
+      policyVersion: "1",
+      defaultHost: "codex",
+      defaultMode: "structure",
+      currentSessionId: "session-1",
+      python: { enabled: true, command: "python3" },
+      createdAt: "2026-07-27T10:00:00.000Z",
+      updatedAt: "2026-07-27T10:00:00.000Z",
+    };
+    expect(MimeraConfigSchema.parse(config)).toEqual(config);
+  });
+
+  test("requires a Python command only when Python support is enabled", () => {
+    expect(() =>
+      MimeraConfigSchema.parse({
+        schemaVersion: "1",
+        projectId: "project-1",
+        targetRoot: "/tmp/target",
+        policyVersion: "1",
+        defaultHost: "codex",
+        defaultMode: "structure",
+        python: { enabled: true },
+        createdAt: "2026-07-27T10:00:00.000Z",
+        updatedAt: "2026-07-27T10:00:00.000Z",
+      }),
+    ).toThrow();
+  });
+});

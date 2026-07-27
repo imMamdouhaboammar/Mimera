@@ -372,3 +372,33 @@ export const RecipePackManifestSchema = z
     }
   });
 export type RecipePackManifest = z.infer<typeof RecipePackManifestSchema>;
+
+export const PythonRuntimeConfigSchema = z
+  .object({
+    enabled: z.boolean(),
+    command: NonEmptyStringSchema.optional(),
+  })
+  .superRefine((config, context) => {
+    if (config.enabled && !config.command) {
+      context.addIssue({
+        code: "custom",
+        path: ["command"],
+        message: "Python command is required when Python workers are enabled",
+      });
+    }
+  });
+export type PythonRuntimeConfig = z.infer<typeof PythonRuntimeConfigSchema>;
+
+export const MimeraConfigSchema = z.object({
+  schemaVersion: z.literal("1"),
+  projectId: NonEmptyStringSchema,
+  targetRoot: AbsolutePathSchema,
+  policyVersion: NonEmptyStringSchema,
+  defaultHost: HostKindSchema,
+  defaultMode: ReferenceModeSchema,
+  currentSessionId: NonEmptyStringSchema.optional(),
+  python: PythonRuntimeConfigSchema,
+  createdAt: ISODateTimeSchema,
+  updatedAt: ISODateTimeSchema,
+});
+export type MimeraConfig = z.infer<typeof MimeraConfigSchema>;
