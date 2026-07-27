@@ -97,3 +97,28 @@ describe("MimeraStore evidence", () => {
     store.close();
   });
 });
+
+test("writes evidence batches atomically after validating the complete batch", async () => {
+  const { store } = await createStore();
+  store.createSession(session());
+  const valid: EvidenceEnvelope<{ text: string }> = {
+    id: "evidence-valid",
+    payload: { text: "valid" },
+    trust: "untrusted-reference",
+    sourceUrl: "https://example.com",
+    capturedAt: "2026-07-27T10:00:01.000Z",
+    contentHash: "d".repeat(64),
+  };
+  const invalid = {
+    ...valid,
+    id: "evidence-invalid",
+    contentHash: "not-a-hash",
+  };
+
+  expect(() => store.putEvidenceBatch("session-1", [valid, invalid])).toThrow();
+  expect(store.listEvidence("session-1")).toEqual([]);
+
+  expect(store.putEvidenceBatch("session-1", [valid])).toEqual([valid]);
+  expect(store.listEvidence("session-1")).toEqual([valid]);
+  store.close();
+});

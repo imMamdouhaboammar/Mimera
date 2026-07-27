@@ -203,29 +203,39 @@ export class MimeraStore {
   }
 
   putEvidence<T>(sessionId: string, input: EvidenceEnvelope<T>): EvidenceEnvelope<T> {
+    return this.putEvidenceBatch(sessionId, [input])[0] as EvidenceEnvelope<T>;
+  }
+
+  putEvidenceBatch<T>(sessionId: string, inputs: readonly EvidenceEnvelope<T>[]): EvidenceEnvelope<T>[] {
     if (!this.getSession(sessionId)) throw new SessionNotFoundError(sessionId);
-    const evidence = EvidenceEnvelopeSchema.parse(input) as EvidenceEnvelope<T>;
-    this.#database
-      .query(
-        `INSERT INTO evidence(id, session_id, trust, source_url, captured_at, content_hash, payload_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(id) DO UPDATE SET
-           session_id = excluded.session_id,
-           trust = excluded.trust,
-           source_url = excluded.source_url,
-           captured_at = excluded.captured_at,
-           content_hash = excluded.content_hash,
-           payload_json = excluded.payload_json`,
-      )
-      .run(
-        evidence.id,
-        sessionId,
-        evidence.trust,
-        evidence.sourceUrl ?? null,
-        evidence.capturedAt,
-        evidence.contentHash,
-        JSON.stringify(evidence.payload),
-      );
+    const evidence = inputs.map(
+      (input) => EvidenceEnvelopeSchema.parse(input) as EvidenceEnvelope<T>,
+    );
+    const insert = this.#database.query(
+      `INSERT INTO evidence(id, session_id, trust, source_url, captured_at, content_hash, payload_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         session_id = excluded.session_id,
+         trust = excluded.trust,
+         source_url = excluded.source_url,
+         captured_at = excluded.captured_at,
+         content_hash = excluded.content_hash,
+         payload_json = excluded.payload_json`,
+    );
+    const writeBatch = this.#database.transaction(() => {
+      for (const item of evidence) {
+        insert.run(
+          item.id,
+          sessionId,
+          item.trust,
+          item.sourceUrl ?? null,
+          item.capturedAt,
+          item.contentHash,
+          JSON.stringify(item.payload),
+        );
+      }
+    });
+    writeBatch();
     return structuredClone(evidence);
   }
 
