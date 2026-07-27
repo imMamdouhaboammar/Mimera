@@ -1,0 +1,16 @@
+node_modules/
+bun.lockb
+*.log
+.DS_Store
+coverage/
+dist/
+.reference-engine/
+.mimera/
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+.worktrees/
