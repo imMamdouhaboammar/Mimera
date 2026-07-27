@@ -239,6 +239,60 @@ export class MimeraStore {
     return structuredClone(evidence);
   }
 
+  commitSessionWithEvidence<T>(
+    input: ReferenceSession,
+    expectedVersion: number,
+    evidenceInputs: readonly EvidenceEnvelope<T>[],
+  ): ReferenceSession {
+    const session = ReferenceSessionSchema.parse(input);
+    const evidence = evidenceInputs.map(
+      (item) => EvidenceEnvelopeSchema.parse(item) as EvidenceEnvelope<T>,
+    );
+    const update = this.#database.query(
+      `UPDATE sessions
+       SET version = ?, status = ?, updated_at = ?, payload_json = ?
+       WHERE id = ? AND version = ?`,
+    );
+    const insert = this.#database.query(
+      `INSERT INTO evidence(id, session_id, trust, source_url, captured_at, content_hash, payload_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         session_id = excluded.session_id,
+         trust = excluded.trust,
+         source_url = excluded.source_url,
+         captured_at = excluded.captured_at,
+         content_hash = excluded.content_hash,
+         payload_json = excluded.payload_json`,
+    );
+    const commit = this.#database.transaction(() => {
+      const result = update.run(
+        session.version,
+        session.status,
+        session.updatedAt,
+        JSON.stringify(session),
+        session.id,
+        expectedVersion,
+      );
+      if (result.changes === 0) {
+        if (!this.getSession(session.id)) throw new SessionNotFoundError(session.id);
+        throw new SessionVersionConflictError(session.id, expectedVersion);
+      }
+      for (const item of evidence) {
+        insert.run(
+          item.id,
+          session.id,
+          item.trust,
+          item.sourceUrl ?? null,
+          item.capturedAt,
+          item.contentHash,
+          JSON.stringify(item.payload),
+        );
+      }
+    });
+    commit();
+    return structuredClone(session);
+  }
+
   getEvidence<T = unknown>(evidenceId: string): EvidenceEnvelope<T> | null {
     const row = this.#database
       .query<EvidenceRow, [string]>(

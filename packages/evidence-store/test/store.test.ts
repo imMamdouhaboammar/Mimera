@@ -122,3 +122,46 @@ test("writes evidence batches atomically after validating the complete batch", a
   expect(store.listEvidence("session-1")).toEqual([valid]);
   store.close();
 });
+
+test("commits a session transition and evidence pack in one transaction", async () => {
+  const { store } = await createStore();
+  store.createSession(session({ status: "REFERENCE_AUTHORIZED" }));
+  const updated = session({
+    version: 2,
+    status: "REFERENCE_CAPTURED",
+    updatedAt: "2026-07-27T10:02:00.000Z",
+  });
+  const evidence: EvidenceEnvelope<{ kind: string }> = {
+    id: "capture-evidence",
+    payload: { kind: "dom" },
+    trust: "untrusted-reference",
+    sourceUrl: "https://example.com",
+    capturedAt: "2026-07-27T10:01:00.000Z",
+    contentHash: "1".repeat(64),
+  };
+
+  store.commitSessionWithEvidence(updated, 1, [evidence]);
+
+  expect(store.getSession("session-1")?.status).toBe("REFERENCE_CAPTURED");
+  expect(store.listEvidence("session-1")).toEqual([evidence]);
+  store.close();
+});
+
+test("rolls back both session and evidence when a capture pack is invalid", async () => {
+  const { store } = await createStore();
+  store.createSession(session({ status: "REFERENCE_AUTHORIZED" }));
+  const updated = session({ version: 2, status: "REFERENCE_CAPTURED" });
+  const invalid = {
+    id: "capture-invalid",
+    payload: { kind: "dom" },
+    trust: "untrusted-reference" as const,
+    sourceUrl: "https://example.com",
+    capturedAt: "2026-07-27T10:01:00.000Z",
+    contentHash: "invalid",
+  };
+
+  expect(() => store.commitSessionWithEvidence(updated, 1, [invalid])).toThrow();
+  expect(store.getSession("session-1")?.status).toBe("REFERENCE_AUTHORIZED");
+  expect(store.listEvidence("session-1")).toEqual([]);
+  store.close();
+});
