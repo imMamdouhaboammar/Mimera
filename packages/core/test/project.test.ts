@@ -281,3 +281,60 @@ test("cannot bypass evidence-backed capture with advance", async () => {
   expect(project.currentSession().status).toBe("REFERENCE_AUTHORIZED");
   project.close();
 });
+
+test("persists page and component context with an evidence-backed stage", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+  });
+  await project.advance("PREFLIGHT", "preflight-service");
+  await project.completeStage("PROJECT_PROFILED", [{
+    id: "profile-context",
+    payload: { kind: "project-profile" },
+    trust: "trusted-system",
+    capturedAt: "2026-07-27T10:00:01.000Z",
+    contentHash: "b".repeat(64),
+  }], { actor: "project-inspector" });
+  await project.completeStage("REFERENCE_AUTHORIZED", [{
+    id: "authorization-context",
+    payload: { kind: "reference-authorization" },
+    trust: "trusted-user",
+    capturedAt: "2026-07-27T10:00:02.000Z",
+    contentHash: "c".repeat(64),
+  }], { actor: "reference-authorization-service" });
+  await project.completeStage("REFERENCE_CAPTURED", [{
+    id: "capture-context",
+    payload: { kind: "capture" },
+    trust: "untrusted-reference",
+    sourceUrl: "https://example.com",
+    capturedAt: "2026-07-27T10:00:03.000Z",
+    contentHash: "d".repeat(64),
+  }], { actor: "reference-capture-service" });
+  await project.completeStage("PAGE_DECOMPOSED", [{
+    id: "decomposition-context",
+    payload: { kind: "page-decomposition" },
+    trust: "trusted-system",
+    capturedAt: "2026-07-27T10:00:04.000Z",
+    contentHash: "e".repeat(64),
+  }], { actor: "design-analysis-service" });
+
+  const session = await project.completeStage("COMPONENT_SPECIFIED", [{
+    id: "component-context",
+    payload: { kind: "component-spec" },
+    trust: "trusted-system",
+    capturedAt: "2026-07-27T10:00:05.000Z",
+    contentHash: "f".repeat(64),
+  }], {
+    actor: "component-specification-service",
+    sessionPatch: { currentPageId: "home", currentComponentId: "navbar" },
+  });
+
+  expect(session.currentPageId).toBe("home");
+  expect(session.currentComponentId).toBe("navbar");
+  expect(project.currentSession().currentComponentId).toBe("navbar");
+  project.close();
+});

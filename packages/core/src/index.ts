@@ -73,8 +73,14 @@ export interface AdvanceSessionOptions {
   now?: string;
 }
 
+export interface SessionContextPatch {
+  currentPageId?: string;
+  currentComponentId?: string;
+}
+
 export interface CompleteReferenceCaptureOptions extends AdvanceSessionOptions {
   actor: string;
+  sessionPatch?: SessionContextPatch;
 }
 
 export interface MimeraProjectStatus {
@@ -294,7 +300,10 @@ export class MimeraProject {
       ...(options.correlationId ? { correlationId: options.correlationId } : {}),
       ...(options.now ? { now: options.now } : {}),
     });
-    return this.#store.commitSessionWithEvidence(updated, current.version, evidence);
+    const staged = options.sessionPatch
+      ? ReferenceSessionSchema.parse({ ...updated, ...options.sessionPatch })
+      : updated;
+    return this.#store.commitSessionWithEvidence(staged, current.version, evidence);
   }
 
   async completeReferenceCapture<T>(
