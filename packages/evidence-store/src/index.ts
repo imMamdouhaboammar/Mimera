@@ -1,7 +1,9 @@
 import { Database } from "bun:sqlite";
 import {
+  AssetProvenanceRecordSchema,
   EvidenceEnvelopeSchema,
   ReferenceSessionSchema,
+  type AssetProvenanceRecord,
   type EvidenceEnvelope,
   type ReferenceSession,
 } from "@mimera/contracts";
@@ -17,6 +19,10 @@ interface EvidenceRow {
   source_url: string | null;
   captured_at: string;
   content_hash: string;
+  payload_json: string;
+}
+
+interface AssetProvenanceRow {
   payload_json: string;
 }
 
@@ -105,6 +111,17 @@ export class MimeraStore {
 
       CREATE INDEX IF NOT EXISTS evidence_session_capture_idx
         ON evidence(session_id, captured_at, id);
+
+      CREATE TABLE IF NOT EXISTS asset_provenance (
+        asset_id TEXT PRIMARY KEY,
+        usage_decision TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        payload_json TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS asset_provenance_decision_idx
+        ON asset_provenance(usage_decision, asset_id);
 
       CREATE TABLE IF NOT EXISTS hook_audit (
         sequence INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -237,6 +254,46 @@ export class MimeraStore {
       )
       .all(sessionId);
     return rows.map((row) => this.#parseEvidence<T>(row));
+  }
+
+  putAssetProvenance(input: AssetProvenanceRecord): AssetProvenanceRecord {
+    const record = AssetProvenanceRecordSchema.parse(input);
+    this.#database
+      .query(
+        `INSERT INTO asset_provenance(asset_id, usage_decision, source_url, updated_at, payload_json)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(asset_id) DO UPDATE SET
+           usage_decision = excluded.usage_decision,
+           source_url = excluded.source_url,
+           updated_at = excluded.updated_at,
+           payload_json = excluded.payload_json`,
+      )
+      .run(
+        record.assetId,
+        record.usageDecision,
+        record.sourceUrl,
+        new Date().toISOString(),
+        JSON.stringify(record),
+      );
+    return structuredClone(record);
+  }
+
+  getAssetProvenance(assetId: string): AssetProvenanceRecord | null {
+    const row = this.#database
+      .query<AssetProvenanceRow, [string]>(
+        "SELECT payload_json FROM asset_provenance WHERE asset_id = ?",
+      )
+      .get(assetId);
+    return row ? AssetProvenanceRecordSchema.parse(JSON.parse(row.payload_json)) : null;
+  }
+
+  listAssetProvenance(): AssetProvenanceRecord[] {
+    const rows = this.#database
+      .query<AssetProvenanceRow, []>(
+        "SELECT payload_json FROM asset_provenance ORDER BY asset_id ASC",
+      )
+      .all();
+    return rows.map((row) => AssetProvenanceRecordSchema.parse(JSON.parse(row.payload_json)));
   }
 
   appendHookAudit(event: HookAuditEvent): void {
