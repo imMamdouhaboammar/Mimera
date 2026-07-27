@@ -6,3 +6,5 @@ export * from "./runner.ts";
 export * from "./builtins/untrusted-content.ts";
 export * from "./builtins/write-scope.ts";
 export * from "./builtins/state-transition.ts";
+export * from "./builtins/asset-provenance.ts";
+export * from "./builtins/command-policy.ts";
