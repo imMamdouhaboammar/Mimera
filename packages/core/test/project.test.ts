@@ -338,3 +338,48 @@ test("persists page and component context with an evidence-backed stage", async 
   expect(project.currentSession().currentComponentId).toBe("navbar");
   project.close();
 });
+
+test("creates hook runners whose decisions persist in the project audit trail", async () => {
+  const root = await targetRoot();
+  const project = await MimeraProject.initialize({
+    targetRoot: root,
+    referenceUrls: ["https://example.com"],
+    host: "codex",
+    mode: "structure",
+    python: { enabled: false },
+  });
+  const runner = project.createHookRunner([
+    {
+      id: "test.project-audit",
+      phases: ["pre-tool-call"],
+      layer: "platform-safety",
+      priority: 0,
+      run: () => ({
+        kind: "deny",
+        reasonCode: "TEST_DENY",
+        message: "Denied for the project audit test",
+      }),
+    },
+  ]);
+
+  const result = await runner.run({
+    sessionId: project.currentSession().id,
+    host: "codex",
+    phase: "pre-tool-call",
+    operation: "test.operation",
+    input: {},
+    trustedScope: {
+      targetRoot: root,
+      targetFiles: [],
+      allowedOrigins: [],
+      allowedCommands: [],
+      grantedPackPermissions: [],
+      policyVersion: "1",
+    },
+    correlationId: "project-audit-correlation",
+  });
+
+  expect(result.decision.kind).toBe("deny");
+  expect(project.status().auditEventCount).toBe(1);
+  project.close();
+});

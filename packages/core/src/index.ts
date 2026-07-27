@@ -17,6 +17,7 @@ import { MimeraStore, SqliteHookAuditSink } from "@mimera/evidence-store";
 import {
   HookRunner,
   createHookTransitionGuard,
+  type MimeraHook,
   createStateTransitionHook,
 } from "@mimera/hooks";
 import { detectPythonRuntime } from "@mimera/python-bridge";
@@ -251,6 +252,14 @@ export class MimeraProject {
     const session = this.#store.getSession(sessionId);
     if (!session) throw new CurrentSessionNotFoundError(sessionId);
     return session;
+  }
+
+  createHookRunner(hooks: readonly MimeraHook[]): HookRunner {
+    this.#assertOpen();
+    return new HookRunner({
+      hooks,
+      auditSink: new SqliteHookAuditSink(this.#store),
+    });
   }
 
   recordEvidence<T>(input: EvidenceEnvelope<T>): EvidenceEnvelope<T> {
