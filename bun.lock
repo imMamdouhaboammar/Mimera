@@ -57,6 +57,16 @@
         "@mimera/state-machine": "workspace:*",
       },
     },
+    "packages/design-analysis": {
+      "name": "@mimera/design-analysis",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mimera/browser-lab": "workspace:*",
+        "@mimera/contracts": "workspace:*",
+        "@mimera/core": "workspace:*",
+        "@mimera/design-dna": "workspace:*",
+      },
+    },
     "packages/design-dna": {
       "name": "@mimera/design-dna",
       "version": "0.1.0",
@@ -131,6 +141,8 @@
     "@mimera/contracts": ["@mimera/contracts@workspace:packages/contracts"],
 
     "@mimera/core": ["@mimera/core@workspace:packages/core"],
+
+    "@mimera/design-analysis": ["@mimera/design-analysis@workspace:packages/design-analysis"],
 
     "@mimera/design-dna": ["@mimera/design-dna@workspace:packages/design-dna"],
 

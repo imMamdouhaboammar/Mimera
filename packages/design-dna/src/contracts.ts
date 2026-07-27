@@ -102,3 +102,18 @@ export interface DesignAnalysisResult {
   dna: DesignDna;
   decomposition: PageDecomposition;
 }
+
+
+export const DesignDnaEvidencePayloadSchema = z.object({
+  schemaVersion: z.literal("1"),
+  kind: z.literal("design-dna"),
+  data: DesignDnaSchema,
+});
+export type DesignDnaEvidencePayload = z.infer<typeof DesignDnaEvidencePayloadSchema>;
+
+export const PageDecompositionEvidencePayloadSchema = z.object({
+  schemaVersion: z.literal("1"),
+  kind: z.literal("page-decomposition"),
+  data: PageDecompositionSchema,
+});
+export type PageDecompositionEvidencePayload = z.infer<typeof PageDecompositionEvidencePayloadSchema>;

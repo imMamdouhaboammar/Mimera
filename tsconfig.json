@@ -57,6 +57,9 @@
       ],
       "@mimera/design-dna": [
         "packages/design-dna/src/index.ts"
+      ],
+      "@mimera/design-analysis": [
+        "packages/design-analysis/src/index.ts"
       ]
     }
   },
