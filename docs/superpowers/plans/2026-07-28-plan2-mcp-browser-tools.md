@@ -41,6 +41,7 @@
 - [x] Delegate to the durable reference-capture service.
 - [x] Return compact structured content with evidence IDs and artifact paths.
 - [x] Keep human-readable MCP text compact and avoid duplicating structured payloads or artifact paths.
+- [x] Serialize concurrent captures by normalized project root before opening the project, preventing stale-state artifact orphans.
 - [x] Map known failures to stable MCP error results without stack traces.
 - [x] Keep the browser-backed MCP test in its own Bun process.
 - [x] Bind the tool to one registration-time project root and reject relative roots.

@@ -1,4 +1,4 @@
-import { isAbsolute } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   BrowserDownloadDeniedError,
@@ -17,6 +17,26 @@ import { NavigationDeniedError, RobotsDeniedError } from "@mimera/reference-poli
 import { z } from "zod";
 
 export const BROWSER_OPEN_REFERENCE_TOOL = "browser.open_reference" as const;
+
+const projectCaptureTails = new Map<string, Promise<void>>();
+
+async function serializeProjectCapture<T>(
+  targetRoot: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const previous = projectCaptureTails.get(targetRoot) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(operation);
+  const tail = current.then(() => undefined, () => undefined);
+  projectCaptureTails.set(targetRoot, tail);
+
+  try {
+    return await current;
+  } finally {
+    if (projectCaptureTails.get(targetRoot) === tail) {
+      projectCaptureTails.delete(targetRoot);
+    }
+  }
+}
 
 const ViewportInputSchema = z.object({
   id: z
@@ -280,7 +300,7 @@ export function registerBrowserTools(
   server: McpServer,
   options: RegisterBrowserToolsOptions,
 ): void {
-  const targetRoot = ProjectRootSchema.parse(options.targetRoot);
+  const targetRoot = resolve(ProjectRootSchema.parse(options.targetRoot));
   const captureService = options.captureService ?? new ReferenceCaptureService();
   const openProject = options.openProject ?? MimeraProject.open;
 
@@ -299,7 +319,7 @@ export function registerBrowserTools(
         openWorldHint: true,
       },
     },
-    async (input) => {
+    async (input) => serializeProjectCapture(targetRoot, async () => {
       let project: MimeraProject | undefined;
       try {
         project = await openProject(targetRoot);
@@ -348,6 +368,6 @@ export function registerBrowserTools(
       } finally {
         project?.close();
       }
-    },
+    }),
   );
 }

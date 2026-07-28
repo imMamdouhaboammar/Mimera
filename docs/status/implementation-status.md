@@ -2,7 +2,7 @@
 
 Audited main baseline SHA: `de5455bb14c143c0fb86afc09bba61a828291d8a`
 
-Status verified through: first project-bound MCP browser tool facade
+Status verified through: serialized first project-bound MCP browser tool facade
 
 Audit date: `2026-07-28`
 
@@ -22,7 +22,7 @@ Status labels:
 - Applications: 1
 - Workspace packages: 21
 - Test files: 40
-- TypeScript test cases: 134
+- TypeScript test cases: 135
 - CLI commands: 8
 - Host adapters: 5
 - GitHub Actions workflows: 1
@@ -42,7 +42,7 @@ Repository evidence:
 | Plan | Status | Implemented evidence | Current boundary |
 |---|---|---|---|
 | Plan 1 | `implemented-and-tested` | Contracts in `packages/contracts/src/index.ts`; guarded transitions in `packages/state-machine/src/index.ts`; SQLite persistence in `packages/evidence-store/src/index.ts`; hooks in `packages/hooks/src`; project lifecycle in `packages/core/src/index.ts`; eight CLI commands in `apps/cli/src/index.ts`; Python worker bridge in `packages/python-bridge/src/index.ts`. | The Plan 1 exit criteria are covered by contract, state-machine, store, hook, core, CLI, and Python bridge tests. |
-| Plan 2 | `partially-implemented` | Playwright capture and typed download denial in `packages/browser-lab/src/browser-lab.ts`; durable capture in `packages/reference-capture/src/index.ts`; project-bound `browser.open_reference` registration in `packages/mcp-server/src/browser-tools.ts`; protocol handshake and safety tests in `packages/mcp-server/test/browser-tools.test.ts`; origin, private-network, robots, redirect, download, and rate policy in `packages/reference-policy/src`. | The first MCP browser tool is implemented without exposing raw Playwright or project-path selection. The remaining Browser Tool surface and a capture-level retry-storm test remain open. |
+| Plan 2 | `partially-implemented` | Playwright capture and typed download denial in `packages/browser-lab/src/browser-lab.ts`; durable capture in `packages/reference-capture/src/index.ts`; project-bound, per-project serialized `browser.open_reference` registration in `packages/mcp-server/src/browser-tools.ts`; protocol handshake and safety tests in `packages/mcp-server/test/browser-tools.test.ts`; origin, private-network, robots, redirect, download, and rate policy in `packages/reference-policy/src`. | The first MCP browser tool is implemented without exposing raw Playwright or project-path selection, and concurrent captures for one project are serialized before opening the project. The remaining Browser Tool surface and a capture-level retry-storm test remain open. |
 | Plan 3 | `partially-implemented` | Design token and responsive inference in `packages/design-dna/src/index.ts`; persisted Design DNA and page decomposition in `packages/design-analysis/src/index.ts`; component evidence feeds `packages/component-spec/src/index.ts`. | Interaction recording/replay, a dedicated brand-mapping artifact, and broader fixture coverage are missing. |
 | Plan 4 | `partially-implemented` | Twenty-seven role descriptors in `packages/agent-runtime/src/descriptors.ts`; registry and validated dispatch in `packages/agent-runtime/src/dispatcher.ts`; scoped packets in `packages/context-curator/src/index.ts`; host role rendering in `packages/host-adapters/src`. | No persisted task graph, bounded retry history, packaged master/discovery/review skills, or real Core Worker end-to-end execution exists. |
 | Plan 5 | `partially-implemented` | Component contracts in `packages/component-spec/src/index.ts`; guarded builder boundary in `packages/implementation-workspace/src/index.ts`; safe project tools in `packages/project-tools/src/index.ts`; review schemas and role descriptors exist. | No complete inspect, implement, review, revise, approve, and lock cycle; scoring, veto aggregation, test-designer output, and regression locks are missing. |
@@ -111,7 +111,7 @@ Existing controls are substantive: private/reserved network blocking, origin aut
 Open security work:
 
 - Redirect and download controls now have direct integration coverage and typed denial errors; the future MCP browser surface must preserve the same hard gates.
-- The MCP facade is project-bound and policy-preserving, but every later Browser Tool must retain the same bounded schema, error redaction, and no-raw-Playwright guarantees.
+- The MCP facade is project-bound, policy-preserving, and serializes same-project captures to prevent orphaned artifacts; every later Browser Tool must retain the same bounded schema, error redaction, serialization, and no-raw-Playwright guarantees.
 - No Recipe Pack signature or permission-escalation runtime exists to test.
 - No signed release or distribution verification exists.
 - Host adapter generation is tested as content, but installed-runtime hard-gate parity is not proven for every host.

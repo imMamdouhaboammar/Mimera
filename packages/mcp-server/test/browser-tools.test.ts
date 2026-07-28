@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -10,7 +10,11 @@ import {
   type CreateMimeraMcpServerOptions,
 } from "@mimera/mcp-server";
 import { PreflightService } from "@mimera/preflight";
-import { ReferenceCaptureService } from "@mimera/reference-capture";
+import {
+  ReferenceCaptureService,
+  type ReferenceCaptureInput,
+  type ReferenceCaptureOutput,
+} from "@mimera/reference-capture";
 
 let server: ReturnType<typeof Bun.serve>;
 let externalServer: ReturnType<typeof Bun.serve>;
@@ -143,6 +147,37 @@ const desktop = {
   height: 800,
   isMobile: false,
 };
+
+class CoordinatedReferenceCaptureService extends ReferenceCaptureService {
+  readonly #barrier: Promise<void>;
+  #releaseBarrier: (() => void) | undefined;
+  #entered = 0;
+
+  constructor() {
+    super({
+      allowHttp: true,
+      allowLoopback: true,
+      minimumIntervalMs: 0,
+    });
+    this.#barrier = new Promise<void>((resolveBarrier) => {
+      this.#releaseBarrier = resolveBarrier;
+    });
+  }
+
+  override async capture(
+    project: MimeraProject,
+    input: ReferenceCaptureInput,
+  ): Promise<ReferenceCaptureOutput> {
+    this.#entered += 1;
+    if (this.#entered === 1) {
+      setTimeout(() => this.#releaseBarrier?.(), 30);
+    } else {
+      this.#releaseBarrier?.();
+    }
+    await this.#barrier;
+    return super.capture(project, input);
+  }
+}
 
 test("lists a project-bound browser.open_reference MCP tool without path or policy overrides", async () => {
   const root = await createAuthorizedProject();
@@ -378,4 +413,42 @@ test("returns a typed MCP error when robots policy denies the reference path", a
   expect(project.currentSession().status).toBe("REFERENCE_AUTHORIZED");
   expect(project.listEvidence()).toHaveLength(2);
   project.close();
+});
+
+test("serializes concurrent captures for one project without orphaning artifacts", async () => {
+  const root = await createAuthorizedProject();
+  const client = await createClient(root, {
+    captureService: new CoordinatedReferenceCaptureService(),
+  });
+
+  const [first, second] = await Promise.all([
+    client.callTool({
+      name: "browser.open_reference",
+      arguments: { url: origin, viewports: [desktop] },
+    }),
+    client.callTool({
+      name: "browser.open_reference",
+      arguments: { url: origin, viewports: [desktop] },
+    }),
+  ]);
+
+  const results = [first, second];
+  expect(results.filter((result) => result.isError !== true)).toHaveLength(1);
+  const failure = results.find((result) => result.isError === true);
+  expect(failure?.structuredContent).toMatchObject({
+    error: {
+      name: "ReferenceCaptureStateError",
+      reasonCode: "REFERENCE_CAPTURE_STATE_INVALID",
+      status: "REFERENCE_CAPTURED",
+    },
+  });
+
+  const project = await MimeraProject.open(root);
+  const sessionId = project.currentSession().id;
+  project.close();
+  const captureDirectories = await readdir(
+    join(root, ".mimera", "evidence", sessionId),
+    { withFileTypes: true },
+  );
+  expect(captureDirectories.filter((entry) => entry.isDirectory())).toHaveLength(1);
 });

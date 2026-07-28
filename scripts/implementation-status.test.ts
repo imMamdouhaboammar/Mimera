@@ -21,7 +21,7 @@ test("publishes a complete Plans 1 through 8 implementation audit", async () => 
   expect(audit).toContain("Applications: 1");
   expect(audit).toContain("Workspace packages: 21");
   expect(audit).toContain("Test files: 40");
-  expect(audit).toContain("TypeScript test cases: 134");
+  expect(audit).toContain("TypeScript test cases: 135");
   expect(audit).toContain("CLI commands: 8");
   expect(audit).toContain("Host adapters: 5");
   expect(audit).toContain("GitHub Actions workflows: 1");
