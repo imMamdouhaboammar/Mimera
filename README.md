@@ -10,4 +10,4 @@ Mimera is a local-first, agentic system for studying reference interfaces and re
 
 ## Current milestone
 
-Plan 1: contracts, hooks, state machine, SQLite session storage, CLI skeleton, and Python worker protocol.
+Plan 1 is implemented and tested. Plans 2, 3, 4, 5, 7, and 8 are partially implemented, while Plan 6 is missing. The SHA-pinned evidence audit, open exit criteria, and selected next vertical slice are maintained in `docs/status/implementation-status.md`.
