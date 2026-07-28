@@ -59,12 +59,8 @@ const ProjectRootSchema = z
 export const BrowserOpenReferenceInputSchema = z.object({
   url: z
     .string()
-    .url()
-    .max(4096)
-    .refine((value) => {
-      const protocol = new URL(value).protocol;
-      return protocol === "http:" || protocol === "https:";
-    }, "url must use HTTP or HTTPS"),
+    .url({ protocol: /^https?$/ })
+    .max(4096),
   viewports: z
     .array(ViewportInputSchema)
     .min(1)
