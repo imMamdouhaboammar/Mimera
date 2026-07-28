@@ -60,7 +60,7 @@ export class AgentResultMismatchError extends Error {
 }
 
 export class AgentWorkerResultInvalidError extends Error {
-  readonly cause: unknown;
+  override readonly cause: unknown;
 
   constructor(cause: unknown) {
     super("Agent worker returned an invalid result contract");
