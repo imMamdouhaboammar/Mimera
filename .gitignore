@@ -14,3 +14,6 @@ __pycache__/
 *.pyc
 .venv/
 .worktrees/
+
+# Generated VS Code AI instructions
+.github/instructions/codacy.instructions.md
