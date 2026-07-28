@@ -58,4 +58,4 @@
 - [x] Run the isolated browser group.
 - [x] Run `bun run check` under `CI=true` with two CPU cores.
 - [x] Run `git diff --check` and review dependency, MCP argument, SSRF, download, path, and error surfaces.
-- [ ] Commit, open a pull request, require green CI and Qlty, merge, and verify `main`.
+- [x] Commit, open a pull request, require green CI and Qlty, merge, and verify `main`.
