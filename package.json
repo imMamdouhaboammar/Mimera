@@ -24,5 +24,8 @@
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5.9.2"
+  },
+  "overrides": {
+    "@hono/node-server": "2.0.12"
   }
 }

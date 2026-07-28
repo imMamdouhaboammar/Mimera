@@ -81,6 +81,9 @@
       ],
       "@mimera/installer": [
         "packages/installer/src/index.ts"
+      ],
+      "@mimera/mcp-server": [
+        "packages/mcp-server/src/index.ts"
       ]
     }
   },

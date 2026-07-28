@@ -1,8 +1,8 @@
 # Mimera Implementation Status Audit
 
-Audited main baseline SHA: `02c5af9a5c191da3c8e38f0f448daf7cf1582d62`
+Audited main baseline SHA: `de5455bb14c143c0fb86afc09bba61a828291d8a`
 
-Status verified through: Plan 2 browser safety integration
+Status verified through: first project-bound MCP browser tool facade
 
 Audit date: `2026-07-28`
 
@@ -20,9 +20,9 @@ Status labels:
 ## Detected repository surface
 
 - Applications: 1
-- Workspace packages: 20
-- Test files: 37
-- TypeScript test cases: 124
+- Workspace packages: 21
+- Test files: 40
+- TypeScript test cases: 134
 - CLI commands: 8
 - Host adapters: 5
 - GitHub Actions workflows: 1
@@ -31,8 +31,8 @@ Repository evidence:
 
 - Application: `apps/cli`.
 - Workspace package declarations: `apps/*` and `packages/*` in `package.json`.
-- Thirty-six TypeScript test files under `apps`, `packages`, and `scripts`, plus `python/tests/test_worker.py`.
-- The verified test entrypoint is `scripts/test.ts`; five browser-backed files run in independent Bun processes.
+- Thirty-nine TypeScript test files under `apps`, `packages`, and `scripts`, plus `python/tests/test_protocol.py`.
+- The verified test entrypoint is `scripts/test.ts`; six browser-backed files run in independent Bun processes.
 - CLI commands are declared in `apps/cli/src/index.ts`: init, status, resume, prepare, capture, analyze, specify, and doctor.
 - Host renderers are implemented in `packages/host-adapters/src/render.ts` for Claude Code, Codex, Cursor, Gemini CLI, and the generic fallback.
 - CI is defined in `.github/workflows/ci.yml` and runs the frozen Bun and Playwright gate.
@@ -42,7 +42,7 @@ Repository evidence:
 | Plan | Status | Implemented evidence | Current boundary |
 |---|---|---|---|
 | Plan 1 | `implemented-and-tested` | Contracts in `packages/contracts/src/index.ts`; guarded transitions in `packages/state-machine/src/index.ts`; SQLite persistence in `packages/evidence-store/src/index.ts`; hooks in `packages/hooks/src`; project lifecycle in `packages/core/src/index.ts`; eight CLI commands in `apps/cli/src/index.ts`; Python worker bridge in `packages/python-bridge/src/index.ts`. | The Plan 1 exit criteria are covered by contract, state-machine, store, hook, core, CLI, and Python bridge tests. |
-| Plan 2 | `partially-implemented` | Playwright capture and typed download denial in `packages/browser-lab/src/browser-lab.ts`; redirect and download integration tests in `packages/browser-lab/test/browser-lab.test.ts`; durable no-partial-commit assertions in `packages/reference-capture/test/reference-capture.test.ts`; origin, private-network, robots, and rate policy in `packages/reference-policy/src`. | Same-origin redirects, cross-origin denial, download cancellation, and durable failure boundaries are implemented and tested. MCP browser tools and a capture-level retry-storm test remain open. |
+| Plan 2 | `partially-implemented` | Playwright capture and typed download denial in `packages/browser-lab/src/browser-lab.ts`; durable capture in `packages/reference-capture/src/index.ts`; project-bound `browser.open_reference` registration in `packages/mcp-server/src/browser-tools.ts`; protocol handshake and safety tests in `packages/mcp-server/test/browser-tools.test.ts`; origin, private-network, robots, redirect, download, and rate policy in `packages/reference-policy/src`. | The first MCP browser tool is implemented without exposing raw Playwright or project-path selection. The remaining Browser Tool surface and a capture-level retry-storm test remain open. |
 | Plan 3 | `partially-implemented` | Design token and responsive inference in `packages/design-dna/src/index.ts`; persisted Design DNA and page decomposition in `packages/design-analysis/src/index.ts`; component evidence feeds `packages/component-spec/src/index.ts`. | Interaction recording/replay, a dedicated brand-mapping artifact, and broader fixture coverage are missing. |
 | Plan 4 | `partially-implemented` | Twenty-seven role descriptors in `packages/agent-runtime/src/descriptors.ts`; registry and validated dispatch in `packages/agent-runtime/src/dispatcher.ts`; scoped packets in `packages/context-curator/src/index.ts`; host role rendering in `packages/host-adapters/src`. | No persisted task graph, bounded retry history, packaged master/discovery/review skills, or real Core Worker end-to-end execution exists. |
 | Plan 5 | `partially-implemented` | Component contracts in `packages/component-spec/src/index.ts`; guarded builder boundary in `packages/implementation-workspace/src/index.ts`; safe project tools in `packages/project-tools/src/index.ts`; review schemas and role descriptors exist. | No complete inspect, implement, review, revise, approve, and lock cycle; scoring, veto aggregation, test-designer output, and regression locks are missing. |
@@ -54,7 +54,8 @@ Repository evidence:
 
 ### Plan 2
 
-- No MCP browser tool facade exists.
+- Only `browser.open_reference` from the planned MCP Browser Tool surface is implemented.
+- Snapshot, screenshot, element inspection, computed style, interaction, trace, console, network, asset, target, context, viewport, and close tools remain open.
 - The rate limiter has unit coverage, but the capture pipeline has no retry-storm integration case.
 
 ### Plan 3
@@ -110,6 +111,7 @@ Existing controls are substantive: private/reserved network blocking, origin aut
 Open security work:
 
 - Redirect and download controls now have direct integration coverage and typed denial errors; the future MCP browser surface must preserve the same hard gates.
+- The MCP facade is project-bound and policy-preserving, but every later Browser Tool must retain the same bounded schema, error redaction, and no-raw-Playwright guarantees.
 - No Recipe Pack signature or permission-escalation runtime exists to test.
 - No signed release or distribution verification exists.
 - Host adapter generation is tested as content, but installed-runtime hard-gate parity is not proven for every host.
@@ -126,16 +128,16 @@ Open security work:
 
 Plan 2 is the earliest incomplete dependency in the ordered implementation program.
 
-Next build: Plan 2 MCP browser tool facade
+Next build: Plan 2 capture retry-storm integration
 
 Scope for the next independently mergeable build:
 
-1. Define the smallest typed MCP browser observation interface over the existing BrowserLab and ReferenceCapture boundaries.
-2. Preserve origin, private-network, robots, rate, redirect, download, and evidence-ingest gates without exposing raw Playwright access.
-3. Add contract tests for allowed observation, denied origins, typed download denial, and bounded tool inputs.
+1. Add a capture fixture that triggers rapid repeated same-origin requests without relying on external network timing.
+2. Prove the capture pipeline applies the per-origin limiter across routed requests and cannot create an unbounded retry loop.
+3. Record bounded timing and request-count evidence without weakening existing robots, origin, redirect, or download gates.
 4. Run the isolated browser group, full repository gate, CI, review, and merge.
 
-Not in that slice: the capture-level retry-storm case. It remains a separate Plan 2 hardening build after the tool facade is executable.
+Not in that slice: expansion of the remaining MCP Browser Tool names. They remain separate vertical slices after the Plan 2 exit-criterion safety case is executable.
 
 ## Audit maintenance rule
 
