@@ -16,12 +16,12 @@ const approvedStatuses = new Set([
 test("publishes a complete Plans 1 through 8 implementation audit", async () => {
   const audit = await readFile(auditPath, "utf8");
 
-  expect(audit).toContain("Audited main baseline SHA: `02c5af9a5c191da3c8e38f0f448daf7cf1582d62`");
+  expect(audit).toContain("Audited main baseline SHA: `de5455bb14c143c0fb86afc09bba61a828291d8a`");
   expect(audit).toContain("Audit date: `2026-07-28`");
   expect(audit).toContain("Applications: 1");
-  expect(audit).toContain("Workspace packages: 20");
-  expect(audit).toContain("Test files: 37");
-  expect(audit).toContain("TypeScript test cases: 124");
+  expect(audit).toContain("Workspace packages: 21");
+  expect(audit).toContain("Test files: 40");
+  expect(audit).toContain("TypeScript test cases: 135");
   expect(audit).toContain("CLI commands: 8");
   expect(audit).toContain("Host adapters: 5");
   expect(audit).toContain("GitHub Actions workflows: 1");
@@ -45,7 +45,7 @@ test("publishes a complete Plans 1 through 8 implementation audit", async () => 
 
   expect(audit).toContain("Plan 2");
   expect(audit).toContain("earliest incomplete dependency");
-  expect(audit).toContain("Next build: Plan 2 MCP browser tool facade");
+  expect(audit).toContain("Next build: Plan 2 capture retry-storm integration");
 });
 
 test("README points to the verified audit instead of the stale Plan 1 milestone", async () => {

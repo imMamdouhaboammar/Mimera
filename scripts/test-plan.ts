@@ -9,6 +9,7 @@ export const BROWSER_INTEGRATION_TESTS = [
   "packages/component-spec/test/component-spec.test.ts",
   "packages/design-analysis/test/design-analysis.test.ts",
   "packages/reference-capture/test/reference-capture.test.ts",
+  "packages/mcp-server/test/browser-tools.test.ts",
 ] as const;
 
 export interface TestPlan {

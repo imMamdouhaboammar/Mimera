@@ -11,6 +11,7 @@ const expectedBrowserTests = [
   "packages/component-spec/test/component-spec.test.ts",
   "packages/design-analysis/test/design-analysis.test.ts",
   "packages/reference-capture/test/reference-capture.test.ts",
+  "packages/mcp-server/test/browser-tools.test.ts",
 ];
 
 test("partitions every test while isolating browser integration files", async () => {
