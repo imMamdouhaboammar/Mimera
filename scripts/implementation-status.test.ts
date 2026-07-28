@@ -16,7 +16,7 @@ const approvedStatuses = new Set([
 test("publishes a complete Plans 1 through 8 implementation audit", async () => {
   const audit = await readFile(auditPath, "utf8");
 
-  expect(audit).toContain("Audited main baseline SHA: `de5455bb14c143c0fb86afc09bba61a828291d8a`");
+  expect(audit).toContain("Audited main baseline SHA: `0089683e5e3db890a72e990db384ed54608a32f1`");
   expect(audit).toContain("Audit date: `2026-07-28`");
   expect(audit).toContain("Applications: 1");
   expect(audit).toContain("Workspace packages: 21");
