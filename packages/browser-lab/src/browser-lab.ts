@@ -39,6 +39,22 @@ export interface BrowserLabOptions {
   headless?: boolean;
 }
 
+export class BrowserDownloadDeniedError extends Error {
+  readonly reasonCode = "DOWNLOAD_BLOCKED" as const;
+  readonly url: string;
+
+  constructor(url: string) {
+    super(`Download blocked by BrowserLab: ${url}`);
+    this.name = "BrowserDownloadDeniedError";
+    this.url = url;
+  }
+}
+
+interface PageSafetyState {
+  downloadError?: BrowserDownloadDeniedError;
+  pendingCancellations: Promise<void>[];
+}
+
 function sha256(value: string | Uint8Array): string {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -165,7 +181,7 @@ export class BrowserLab {
     try {
       const page = await context.newPage();
       const network: NetworkEvidenceEvent[] = [];
-      this.#wirePageSafety(page, network);
+      const safety = this.#wirePageSafety(page, network);
       await page.route("**/*", async (route) => {
         const request = route.request();
         const requestUrl = request.url();
@@ -189,10 +205,17 @@ export class BrowserLab {
         }
       });
 
-      const response = await page.goto(input.url, {
-        waitUntil: "domcontentloaded",
-        timeout: 20_000,
-      });
+      let response;
+      try {
+        response = await page.goto(input.url, {
+          waitUntil: "domcontentloaded",
+          timeout: 20_000,
+        });
+      } catch (error) {
+        await Promise.all(safety.pendingCancellations);
+        if (safety.downloadError) throw safety.downloadError;
+        throw error;
+      }
       if (!response) throw new Error(`Navigation did not return a response for ${input.url}`);
       await this.#policy.assertNavigation(page.url());
       await page.addStyleTag({
@@ -202,6 +225,8 @@ export class BrowserLab {
         if (document.fonts) await document.fonts.ready;
       });
       await page.waitForTimeout(50);
+      await Promise.all(safety.pendingCancellations);
+      if (safety.downloadError) throw safety.downloadError;
 
       const dom = await this.#captureDom(page);
       const screenshotPath = join(directory, "screenshot.png");
@@ -236,9 +261,21 @@ export class BrowserLab {
     }
   }
 
-  #wirePageSafety(page: Page, network: NetworkEvidenceEvent[]): void {
+  #wirePageSafety(page: Page, network: NetworkEvidenceEvent[]): PageSafetyState {
+    const state: PageSafetyState = { pendingCancellations: [] };
     page.on("dialog", (dialog) => void dialog.dismiss());
-    page.on("download", (download) => void download.cancel());
+    page.on("download", (download) => {
+      const error = new BrowserDownloadDeniedError(download.url());
+      state.downloadError ??= error;
+      network.push({
+        kind: "blocked",
+        url: download.url(),
+        resourceType: "download",
+        timestamp: new Date().toISOString(),
+        failureText: error.message,
+      });
+      state.pendingCancellations.push(download.cancel().catch(() => {}));
+    });
     page.on("request", (request) => {
       network.push({
         kind: "request",
@@ -268,6 +305,7 @@ export class BrowserLab {
         ...(failureText ? { failureText } : {}),
       });
     });
+    return state;
   }
 
   async #captureDom(page: Page): Promise<DomSnapshot> {
