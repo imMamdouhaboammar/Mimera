@@ -15,6 +15,7 @@ test("CI runs Mimera's locked Bun and Playwright verification", async () => {
   expect(workflow).toContain(
     "uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1",
   );
+  expect(workflow).toContain("persist-credentials: false");
   expect(workflow).toContain(
     "uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0",
   );

@@ -48,4 +48,30 @@
 - Dependencies install from the frozen lockfile without lifecycle scripts.
 - Chromium and required Linux libraries install from Playwright 1.61.0.
 - `bun run check` is the sole repository verification command.
+- Browser-backed integration files execute in separate Bun processes.
 - Local targeted and full tests pass without repository dependency changes.
+
+### Task 2: Isolate browser integration processes
+
+**Files:**
+- Modify: `package.json`
+- Create: `scripts/test-plan.ts`
+- Create: `scripts/test-plan.test.ts`
+- Create: `scripts/test.ts`
+- Modify: `.github/workflows/ci.yml`
+- Modify: `scripts/ci-workflow.test.ts`
+
+**Interfaces:**
+- Consumes: every repository `*.test.ts` and `*.test.tsx` file.
+- Produces: one non-browser test process followed by one process per Playwright integration file.
+
+**Incident evidence:** GitHub Actions reported `waitForTimeout: Target page` inside `BrowserLab.#captureViewport`. A local repeated-capture probe reproduced Chromium remote debugging pipe termination on cycle 8. No test retry, skip, assertion reduction, or timeout increase is permitted as a remedy.
+
+- [ ] Reproduce the remote debugging pipe failure under repeated full BrowserLab captures.
+- [ ] Write a failing contract for complete, duplicate-free test partitioning.
+- [ ] Write a failing contract that routes `bun run check` through the test runner.
+- [ ] Run non-browser tests together and each browser integration file separately.
+- [ ] Keep every test and assertion enabled; do not add retries or longer timeouts.
+- [ ] Disable checkout credential persistence after verifying the GitHub job defaults.
+- [ ] Stress the isolated browser groups and rerun the full repository gate.
+- [ ] Push the correction and require a fresh green GitHub Actions run.
