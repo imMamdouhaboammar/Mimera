@@ -2,18 +2,40 @@ import { afterAll, afterEach, beforeAll, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { BrowserDownloadDeniedError } from "@mimera/browser-lab";
 import { MimeraProject } from "@mimera/core";
+import { NavigationDeniedError } from "@mimera/reference-policy";
 import {
   ReferenceCaptureService,
   ReferenceCaptureStateError,
 } from "../src/index.ts";
 
 let server: ReturnType<typeof Bun.serve>;
+let externalServer: ReturnType<typeof Bun.serve>;
 let origin: string;
+let externalOrigin: string;
 const directories: string[] = [];
 
 beforeAll(() => {
   const fixture = resolve(import.meta.dir, "../../../fixtures/reference-sites/navbar/index.html");
+  externalServer = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const url = new URL(request.url);
+      if (url.pathname === "/robots.txt") {
+        return new Response("User-agent: MimeraBot\nAllow: /", { status: 200 });
+      }
+      if (url.pathname === "/final") {
+        return new Response(await readFile(fixture), {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      return new Response("Not found", { status: 404 });
+    },
+  });
+  externalOrigin = `http://${externalServer.hostname}:${externalServer.port}`;
+
   server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
@@ -21,6 +43,30 @@ beforeAll(() => {
       const url = new URL(request.url);
       if (url.pathname === "/robots.txt") {
         return new Response("User-agent: MimeraBot\nAllow: /", { status: 200 });
+      }
+      if (url.pathname === "/cross-origin-redirect") {
+        return new Response(null, {
+          status: 302,
+          headers: { location: `${externalOrigin}/final` },
+        });
+      }
+      if (url.pathname === "/download-page") {
+        return new Response(`<!doctype html>
+          <html><head><title>Download Fixture</title></head>
+          <body>
+            <a id="download" href="/payload.bin" download>Download</a>
+            <script>addEventListener("load", () => document.querySelector("#download").click())</script>
+          </body></html>`, {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      if (url.pathname === "/payload.bin") {
+        return new Response("blocked-download-payload", {
+          headers: {
+            "content-type": "application/octet-stream",
+            "content-disposition": 'attachment; filename="payload.bin"',
+          },
+        });
       }
       if (url.pathname === "/") {
         return new Response(await readFile(fixture), {
@@ -33,7 +79,10 @@ beforeAll(() => {
   origin = `http://${server.hostname}:${server.port}`;
 });
 
-afterAll(() => server.stop(true));
+afterAll(() => {
+  server.stop(true);
+  externalServer.stop(true);
+});
 afterEach(async () => {
   await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
 });
@@ -50,8 +99,7 @@ async function createProject(): Promise<MimeraProject> {
   });
 }
 
-test("captures and commits a complete responsive evidence pack", async () => {
-  const project = await createProject();
+async function authorizeProject(project: MimeraProject): Promise<void> {
   await project.advance("PREFLIGHT", "workflow-orchestrator");
   await project.completeStage("PROJECT_PROFILED", [{
     id: "profile-reference-capture",
@@ -67,6 +115,12 @@ test("captures and commits a complete responsive evidence pack", async () => {
     capturedAt: "2026-07-27T10:00:02.000Z",
     contentHash: "a".repeat(64),
   }], { actor: "reference-authorization-service" });
+}
+
+
+test("captures and commits a complete responsive evidence pack", async () => {
+  const project = await createProject();
+  await authorizeProject(project);
   const service = new ReferenceCaptureService({
     allowHttp: true,
     allowLoopback: true,
@@ -88,6 +142,68 @@ test("captures and commits a complete responsive evidence pack", async () => {
   expect((await stat(result.outputDirectory)).isDirectory()).toBe(true);
   project.close();
 }, 30_000);
+
+test("rejects a cross-origin redirect without committing partial capture evidence", async () => {
+  const project = await createProject();
+  await authorizeProject(project);
+  const evidenceBeforeCapture = project.listEvidence().length;
+  const service = new ReferenceCaptureService({
+    allowHttp: true,
+    allowLoopback: true,
+    minimumIntervalMs: 0,
+  });
+
+  let caught: unknown;
+  try {
+    await service.capture(project, {
+      url: `${origin}/cross-origin-redirect`,
+      viewports: [{ id: "desktop", width: 1280, height: 800, isMobile: false }],
+    });
+  } catch (error) {
+    caught = error;
+  }
+
+  expect(caught).toBeInstanceOf(NavigationDeniedError);
+  expect(caught).toMatchObject({
+    reasonCode: "ORIGIN_NOT_ALLOWED",
+    url: `${externalOrigin}/final`,
+  });
+  expect(project.currentSession().status).toBe("REFERENCE_AUTHORIZED");
+  expect(project.listEvidence()).toHaveLength(evidenceBeforeCapture);
+  project.close();
+}, 30_000);
+
+
+test("rejects a download attempt without committing partial capture evidence", async () => {
+  const project = await createProject();
+  await authorizeProject(project);
+  const evidenceBeforeCapture = project.listEvidence().length;
+  const service = new ReferenceCaptureService({
+    allowHttp: true,
+    allowLoopback: true,
+    minimumIntervalMs: 0,
+  });
+
+  let caught: unknown;
+  try {
+    await service.capture(project, {
+      url: `${origin}/download-page`,
+      viewports: [{ id: "desktop", width: 1280, height: 800, isMobile: false }],
+    });
+  } catch (error) {
+    caught = error;
+  }
+
+  expect(caught).toBeInstanceOf(BrowserDownloadDeniedError);
+  expect(caught).toMatchObject({
+    reasonCode: "DOWNLOAD_BLOCKED",
+    url: `${origin}/payload.bin`,
+  });
+  expect(project.currentSession().status).toBe("REFERENCE_AUTHORIZED");
+  expect(project.listEvidence()).toHaveLength(evidenceBeforeCapture);
+  project.close();
+}, 30_000);
+
 
 test("refuses capture before reference authorization", async () => {
   const project = await createProject();

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import type { TrustedScope } from "@mimera/contracts";
@@ -8,7 +8,7 @@ import {
   ReferencePolicy,
   RobotsPolicyClient,
 } from "@mimera/reference-policy";
-import { BrowserLab } from "../src/index.ts";
+import { BrowserDownloadDeniedError, BrowserLab } from "../src/index.ts";
 
 let server: ReturnType<typeof Bun.serve>;
 let origin: string;
@@ -24,7 +24,28 @@ beforeAll(() => {
       if (url.pathname === "/robots.txt") {
         return new Response("User-agent: MimeraBot\nAllow: /", { status: 200 });
       }
-      if (url.pathname === "/" || url.pathname === "/index.html") {
+      if (url.pathname === "/redirect") {
+        return new Response(null, { status: 302, headers: { location: "/final" } });
+      }
+      if (url.pathname === "/download-page") {
+        return new Response(`<!doctype html>
+          <html><head><title>Download Fixture</title></head>
+          <body>
+            <a id="download" href="/payload.bin" download>Download</a>
+            <script>addEventListener("load", () => document.querySelector("#download").click())</script>
+          </body></html>`, {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      if (url.pathname === "/payload.bin") {
+        return new Response("blocked-download-payload", {
+          headers: {
+            "content-type": "application/octet-stream",
+            "content-disposition": 'attachment; filename="payload.bin"',
+          },
+        });
+      }
+      if (["/", "/index.html", "/final"].includes(url.pathname)) {
         return new Response(await readFile(fixture), {
           headers: { "content-type": "text/html; charset=utf-8" },
         });
@@ -49,20 +70,23 @@ const trustedScope = (targetRoot: string): TrustedScope => ({
   policyVersion: "1",
 });
 
+function createLab(): BrowserLab {
+  return new BrowserLab({
+    policy: new ReferencePolicy({
+      allowedOrigins: [origin],
+      allowHttp: true,
+      allowLoopback: true,
+    }),
+    robots: new RobotsPolicyClient(),
+    rateLimiter: new OriginRateLimiter({ minimumIntervalMs: 0 }),
+  });
+}
+
 describe("BrowserLab", () => {
   test("captures deterministic desktop and mobile evidence", async () => {
     const outputDirectory = await mkdtemp(join(tmpdir(), "mimera-browser-"));
     directories.push(outputDirectory);
-    const policy = new ReferencePolicy({
-      allowedOrigins: [origin],
-      allowHttp: true,
-      allowLoopback: true,
-    });
-    const lab = new BrowserLab({
-      policy,
-      robots: new RobotsPolicyClient(),
-      rateLimiter: new OriginRateLimiter({ minimumIntervalMs: 0 }),
-    });
+    const lab = createLab();
 
     try {
       const result = await lab.capturePage({
@@ -96,6 +120,67 @@ describe("BrowserLab", () => {
       expect(desktopDomEvidence).toBeDefined();
       expect((await stat(desktop!.artifacts.screenshot.path)).size).toBeGreaterThan(100);
       expect((await stat(mobile!.artifacts.trace.path)).size).toBeGreaterThan(100);
+    } finally {
+      await lab.close();
+    }
+  }, 30_000);
+
+  test("follows an authorized same-origin redirect and records the final URL", async () => {
+    const outputDirectory = await mkdtemp(join(tmpdir(), "mimera-browser-redirect-"));
+    directories.push(outputDirectory);
+    const lab = createLab();
+
+    try {
+      const result = await lab.capturePage({
+        sessionId: "session-redirect",
+        host: "codex",
+        trustedScope: trustedScope(outputDirectory),
+        url: `${origin}/redirect`,
+        outputDirectory,
+        viewports: [{ id: "desktop", width: 1280, height: 800, isMobile: false }],
+      });
+
+      const capture = result.captures[0]!;
+      expect(result.requestedUrl).toBe(`${origin}/redirect`);
+      expect(capture.finalUrl).toBe(`${origin}/final`);
+      expect(capture.dom.url).toBe(`${origin}/final`);
+      expect(
+        capture.network.some(
+          (event) => event.kind === "response" && event.url === `${origin}/redirect` && event.status === 302,
+        ),
+      ).toBe(true);
+    } finally {
+      await lab.close();
+    }
+  }, 30_000);
+
+  test("cancels downloads and surfaces a typed denial without writing the payload", async () => {
+    const outputDirectory = await mkdtemp(join(tmpdir(), "mimera-browser-download-"));
+    directories.push(outputDirectory);
+    const lab = createLab();
+
+    try {
+      let caught: unknown;
+      try {
+        await lab.capturePage({
+          sessionId: "session-download",
+          host: "codex",
+          trustedScope: trustedScope(outputDirectory),
+          url: `${origin}/download-page`,
+          outputDirectory,
+          viewports: [{ id: "desktop", width: 1280, height: 800, isMobile: false }],
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(BrowserDownloadDeniedError);
+      expect(caught).toMatchObject({
+        reasonCode: "DOWNLOAD_BLOCKED",
+        url: `${origin}/payload.bin`,
+      });
+      const files = await readdir(outputDirectory, { recursive: true });
+      expect(files.some((file) => file.endsWith("payload.bin"))).toBe(false);
     } finally {
       await lab.close();
     }
