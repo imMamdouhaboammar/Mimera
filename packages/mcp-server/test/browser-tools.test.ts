@@ -185,18 +185,19 @@ test("lists a project-bound browser.open_reference MCP tool without path or poli
 
   const listed = await client.listTools();
 
-  expect(listed.tools).toHaveLength(6);
-  expect(listed.tools[0]?.name).toBe("browser.open_reference");
-  expect(listed.tools[0]?.inputSchema).toMatchObject({
+  expect(listed.tools).toHaveLength(12);
+  const openRefTool = listed.tools.find((t) => t.name === "browser.open_reference");
+  expect(openRefTool).toBeDefined();
+  expect(openRefTool?.inputSchema).toMatchObject({
     type: "object",
     required: ["url", "viewports"],
   });
-  expect(listed.tools[0]?.inputSchema.properties).not.toHaveProperty("targetRoot");
-  expect(listed.tools[0]?.inputSchema.properties).not.toHaveProperty("allowHttp");
-  expect(listed.tools[0]?.inputSchema.properties).not.toHaveProperty("allowLoopback");
-  expect(listed.tools[0]?.inputSchema.properties).toHaveProperty("viewports");
-  expect(listed.tools[0]?.outputSchema).toBeDefined();
-  const outputSchema = JSON.stringify(listed.tools[0]?.outputSchema);
+  expect(openRefTool?.inputSchema.properties).not.toHaveProperty("targetRoot");
+  expect(openRefTool?.inputSchema.properties).not.toHaveProperty("allowHttp");
+  expect(openRefTool?.inputSchema.properties).not.toHaveProperty("allowLoopback");
+  expect(openRefTool?.inputSchema.properties).toHaveProperty("viewports");
+  expect(openRefTool?.outputSchema).toBeDefined();
+  const outputSchema = JSON.stringify(openRefTool?.outputSchema);
   expect(outputSchema).toContain("REFERENCE_CAPTURED");
   expect(outputSchema).toContain("BROWSER_TOOL_FAILED");
 });

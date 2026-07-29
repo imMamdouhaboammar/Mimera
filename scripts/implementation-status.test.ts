@@ -19,8 +19,8 @@ test("publishes a complete Plans 1 through 8 implementation audit", async () => 
   expect(audit).toContain("Audited main baseline SHA: `0089683e5e3db890a72e990db384ed54608a32f1`");
   expect(audit).toContain("Audit date: `2026-07-28`");
   expect(audit).toContain("Applications: 1");
-  expect(audit).toContain("Workspace packages: 21");
-  expect(audit).toContain("Test files: 40");
+  expect(audit).toContain("Workspace packages: 22");
+  expect(audit).toContain("Test files: 42");
   expect(audit).toContain("TypeScript test cases: 135");
   expect(audit).toContain("CLI commands: 8");
   expect(audit).toContain("Host adapters: 5");

@@ -20,8 +20,8 @@ Status labels:
 ## Detected repository surface
 
 - Applications: 1
-- Workspace packages: 21
-- Test files: 40
+- Workspace packages: 22
+- Test files: 42
 - TypeScript test cases: 135
 - CLI commands: 8
 - Host adapters: 5

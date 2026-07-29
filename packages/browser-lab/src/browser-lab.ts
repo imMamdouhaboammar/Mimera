@@ -174,7 +174,8 @@ export class BrowserLab {
       reducedMotion: "reduce",
       serviceWorkers: "block",
       acceptDownloads: false,
-      userAgent: "MimeraBot/0.1",
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Mimera/0.1",
     });
     const tracePath = join(directory, "trace.zip");
     await context.tracing.start({ screenshots: true, snapshots: true, sources: false });
@@ -191,7 +192,15 @@ export class BrowserLab {
         }
         try {
           await this.#policy.assertNavigation(requestUrl);
-          await this.#rateLimiter.acquire(requestUrl);
+          const resourceType = request.resourceType();
+          const isStaticAsset =
+            resourceType === "image" ||
+            resourceType === "font" ||
+            resourceType === "media" ||
+            resourceType === "stylesheet";
+          if (!isStaticAsset) {
+            await this.#rateLimiter.acquire(requestUrl);
+          }
           await route.continue();
         } catch (error) {
           network.push({
@@ -210,7 +219,7 @@ export class BrowserLab {
       try {
         response = await page.goto(input.url, {
           waitUntil: "domcontentloaded",
-          timeout: 20_000,
+          timeout: 30_000,
         });
       } catch (error) {
         await Promise.all(safety.pendingCancellations);

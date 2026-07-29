@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "clone-website": {
+      "source": "JCodesMore/ai-website-cloner-template",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/clone-website/SKILL.md",
+      "computedHash": "f8bb3724afae412770cd73b377d0e83672d1c00619789c03ac09d8213c9cd24a"
+    },
+    "web-clone": {
+      "source": "nexu-io/open-design",
+      "sourceType": "github",
+      "skillPath": "skills/web-clone/SKILL.md",
+      "computedHash": "4ac48d6cc4d4f4f019c702c7b5d1e92d605eef55ded8e82fbed4f8fb88af9fb8"
+    },
+    "website-cloner": {
+      "source": "horuz-ai/claude-plugins",
+      "sourceType": "github",
+      "skillPath": "plugins/website-cloner/skills/website-cloner/SKILL.md",
+      "computedHash": "6b9d806fe7320fe7d9a7579a06b64a9348e24ec21edb0ded649750cca69e0982"
+    }
+  }
+}

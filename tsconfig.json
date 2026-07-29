@@ -84,6 +84,9 @@
       ],
       "@mimera/mcp-server": [
         "packages/mcp-server/src/index.ts"
+      ],
+      "@mimera/visual-tools": [
+        "packages/visual-tools/src/index.ts"
       ]
     }
   },
