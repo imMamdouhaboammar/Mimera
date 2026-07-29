@@ -191,6 +191,7 @@ export class BrowserLab {
         }
         try {
           await this.#policy.assertNavigation(requestUrl);
+          await this.#rateLimiter.acquire(requestUrl);
           await route.continue();
         } catch (error) {
           network.push({
@@ -223,6 +224,8 @@ export class BrowserLab {
       });
       await page.evaluate(async () => {
         if (document.fonts) await document.fonts.ready;
+        const globalWithPoll = window as unknown as { pollDone?: Promise<unknown> };
+        if (globalWithPoll.pollDone) await globalWithPoll.pollDone.catch(() => {});
       });
       await page.waitForTimeout(50);
       await Promise.all(safety.pendingCancellations);

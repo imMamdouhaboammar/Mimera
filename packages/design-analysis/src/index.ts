@@ -210,3 +210,5 @@ export class DesignAnalysisService {
     return { session, analysis };
   }
 }
+
+export * from "./brand-adapter.ts";

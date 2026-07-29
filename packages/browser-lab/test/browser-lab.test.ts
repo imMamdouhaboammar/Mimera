@@ -45,6 +45,28 @@ beforeAll(() => {
           },
         });
       }
+      if (url.pathname === "/retry-storm") {
+        return new Response(`<!doctype html>
+          <html><head><title>Retry Storm Fixture</title></head>
+          <body>
+            <h1>Retry Storm</h1>
+            <script>
+              window.pollDone = Promise.all([
+                fetch("/api/poll?id=1"),
+                fetch("/api/poll?id=2"),
+                fetch("/api/poll?id=3"),
+                fetch("/api/poll?id=4")
+              ]);
+            </script>
+          </body></html>`, {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      if (url.pathname === "/api/poll") {
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
       if (["/", "/index.html", "/final"].includes(url.pathname)) {
         return new Response(await readFile(fixture), {
           headers: { "content-type": "text/html; charset=utf-8" },
@@ -181,6 +203,46 @@ describe("BrowserLab", () => {
       });
       const files = await readdir(outputDirectory, { recursive: true });
       expect(files.some((file) => file.endsWith("payload.bin"))).toBe(false);
+    } finally {
+      await lab.close();
+    }
+  }, 30_000);
+
+  test("paces rapid same-origin subrequests and prevents retry-storm without unbounded loops", async () => {
+    const outputDirectory = await mkdtemp(join(tmpdir(), "mimera-browser-retry-storm-"));
+    directories.push(outputDirectory);
+    const lab = new BrowserLab({
+      policy: new ReferencePolicy({
+        allowedOrigins: [origin],
+        allowHttp: true,
+        allowLoopback: true,
+      }),
+      robots: new RobotsPolicyClient(),
+      rateLimiter: new OriginRateLimiter({ minimumIntervalMs: 50 }),
+    });
+
+    try {
+      const result = await lab.capturePage({
+        sessionId: "session-retry-storm",
+        host: "codex",
+        trustedScope: trustedScope(outputDirectory),
+        url: `${origin}/retry-storm`,
+        outputDirectory,
+        viewports: [{ id: "desktop", width: 1280, height: 800, isMobile: false }],
+      });
+
+      const capture = result.captures[0]!;
+      const pollResponses = capture.network.filter(
+        (event) => event.kind === "response" && event.url.includes("/api/poll"),
+      );
+      expect(pollResponses).toHaveLength(4);
+
+      const timestamps = pollResponses.map((event) => new Date(event.timestamp).getTime());
+      for (let i = 1; i < timestamps.length; i++) {
+        expect(timestamps[i]! - timestamps[i - 1]!).toBeGreaterThanOrEqual(30);
+      }
+
+      expect(result.evidence.length).toBeGreaterThan(0);
     } finally {
       await lab.close();
     }

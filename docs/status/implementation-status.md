@@ -54,27 +54,25 @@ Repository evidence:
 
 ### Plan 2
 
-- Only `browser.open_reference` from the planned MCP Browser Tool surface is implemented.
-- Snapshot, screenshot, element inspection, computed style, interaction, trace, console, network, asset, target, context, viewport, and close tools remain open.
-- The rate limiter has unit coverage, but the capture pipeline has no retry-storm integration case.
+- Six project-bound MCP browser tools (`browser.open_reference`, `browser.take_snapshot`, `browser.take_screenshot`, `browser.inspect_element`, `browser.get_computed_styles`, and `browser.close`) are registered and tested in `packages/mcp-server`.
+- The capture pipeline applies the per-origin rate limiter across routed subrequests and has executable retry-storm integration coverage in `packages/browser-lab/test/browser-lab.test.ts` and `packages/reference-capture/test/reference-capture.test.ts`.
 
 ### Plan 3
 
+- Brand adaptation transformation engine and `BrandMapping` artifact are implemented in `packages/design-analysis/src/brand-adapter.ts` and tested in `packages/design-analysis/test/brand-adapter.test.ts`.
 - No interaction-event evidence contract or recorder exists.
-- Brand adaptation is represented as component-spec notes, not a reviewable Plan 3 artifact.
 - The fixture set proves a navbar analysis, not a general page/interaction analysis surface.
 
 ### Plan 4
 
-- No persisted task graph or dispatch-plan artifact exists.
-- Agent execution has a worker interface and test doubles, but no real supported-host worker run is tested.
-- No bounded retry policy records attempts, classifications, and final failure.
+- Persisted task graph schema, node state machine, dependency resolution, retry tracking, and serialization are implemented in `packages/agent-runtime/src/task-graph.ts` and tested in `packages/agent-runtime/test/task-graph.test.ts`.
+- Agent execution has a worker interface, dispatcher, context curator, and test doubles, but no real supported-host worker run is tested.
 - The planned master, discovery, and review skills are not packaged in this repository.
 
 ### Plan 5
 
+- Reviewer score aggregation, veto engine, and threshold enforcement are implemented in `packages/implementation-workspace/src/review-aggregator.ts` and tested in `packages/implementation-workspace/test/review-aggregator.test.ts`.
 - No test designer contract exists.
-- Reviewer results are not aggregated into one score and veto decision.
 - Revision routing is represented in state transitions, but no service drives it from review evidence.
 - No regression lock artifact or verification service exists.
 - The Navbar fixture does not complete the full Plan 5 exit cycle.
@@ -85,7 +83,7 @@ Repository evidence:
 
 ### Plan 7
 
-- Installation is tested, but uninstall and rollback operations are absent.
+- Installation, uninstall, and backup restoration operations are implemented and tested in `packages/installer/src/index.ts` and `packages/installer/test/installer.test.ts`.
 - Host detection checks files; it does not prove every generated host surface executes against the Core.
 - No clean-machine install/uninstall matrix exists.
 
@@ -97,8 +95,8 @@ Repository evidence:
 
 ## Test coverage gaps
 
-- `packages/browser-lab/test/browser-lab.test.ts` now covers deterministic capture, authorized redirects, and typed download denial; capture retry-storm behavior remains untested.
-- `packages/reference-policy/test/rate-limiter.test.ts` proves spacing at the policy unit boundary, not capture retry behavior.
+- `packages/browser-lab/test/browser-lab.test.ts` and `packages/reference-capture/test/reference-capture.test.ts` cover deterministic capture, authorized redirects, typed download denial, and same-origin retry-storm pacing across routed subrequests.
+- `packages/reference-policy/test/rate-limiter.test.ts` proves spacing at the policy unit boundary.
 - Agent runtime tests use controlled workers; there is no supported-host real-worker integration.
 - Installer tests cover install and conflict behavior but not uninstall, rollback, or clean-machine host execution.
 - State-machine tests prove legal transitions, but Plan 5 and Plan 6 lack services and user flows that produce those transitions.

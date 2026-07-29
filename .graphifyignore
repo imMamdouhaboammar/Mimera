@@ -1,0 +1,7 @@
+*.md
+*.html
+*.txt
+*.rst
+docs/
+fixtures/
+.github/

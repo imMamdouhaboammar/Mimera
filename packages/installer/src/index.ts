@@ -79,6 +79,19 @@ export interface InstallHostsResult {
   registryHashes: Record<string, string>;
 }
 
+export interface UninstallHostsInput {
+  targetRoot: string;
+  hosts: HostKind[];
+  restoreBackups?: boolean;
+}
+
+export interface UninstallHostsResult {
+  targetRoot: string;
+  hosts: HostKind[];
+  removed: string[];
+  restored: string[];
+}
+
 interface PlannedFile extends GeneratedHostFile {
   host: HostKind;
   contentHash: string;
@@ -277,6 +290,53 @@ export class MimeraInstaller {
       unchanged: plan.filter((item) => item.status === "unchanged").map((item) => item.relativePath).sort(),
       replaced: changed.filter((item) => item.status === "replace").map((item) => item.relativePath).sort(),
       registryHashes,
+    };
+  }
+
+  async uninstall(input: UninstallHostsInput): Promise<UninstallHostsResult> {
+    const targetRoot = path.resolve(input.targetRoot);
+    const hosts = [...new Set(input.hosts.map((host) => HostKindSchema.parse(host)))].sort();
+    if (hosts.length === 0) throw new Error("At least one host adapter is required for uninstall");
+
+    const removed: string[] = [];
+    const restored: string[] = [];
+
+    for (const host of hosts) {
+      const manifestPath = path.join(targetRoot, ".mimera", "installations", `${host}.json`);
+      if (!(await exists(manifestPath))) continue;
+
+      let manifest: InstallationManifest;
+      try {
+        manifest = InstallationManifestSchema.parse(
+          JSON.parse(await readFile(manifestPath, "utf8")),
+        );
+      } catch {
+        continue;
+      }
+
+      for (const file of manifest.files) {
+        const absolutePath = path.join(targetRoot, ...file.path.split("/"));
+        const backupPath = path.join(targetRoot, ".mimera", "backups", host, ...file.path.split("/"));
+
+        if (input.restoreBackups && (await exists(backupPath))) {
+          await mkdir(path.dirname(absolutePath), { recursive: true });
+          await copyFile(backupPath, absolutePath);
+          restored.push(file.path);
+        } else if (await exists(absolutePath)) {
+          await rm(absolutePath, { force: true });
+          removed.push(file.path);
+        }
+      }
+
+      await rm(manifestPath, { force: true });
+      await rm(path.join(targetRoot, ".mimera", "backups", host), { recursive: true, force: true }).catch(() => {});
+    }
+
+    return {
+      targetRoot,
+      hosts,
+      removed: removed.sort(),
+      restored: restored.sort(),
     };
   }
 }

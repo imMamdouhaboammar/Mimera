@@ -17,6 +17,11 @@ import { NavigationDeniedError, RobotsDeniedError } from "@mimera/reference-poli
 import { z } from "zod";
 
 export const BROWSER_OPEN_REFERENCE_TOOL = "browser.open_reference" as const;
+export const BROWSER_TAKE_SNAPSHOT_TOOL = "browser.take_snapshot" as const;
+export const BROWSER_TAKE_SCREENSHOT_TOOL = "browser.take_screenshot" as const;
+export const BROWSER_INSPECT_ELEMENT_TOOL = "browser.inspect_element" as const;
+export const BROWSER_GET_COMPUTED_STYLES_TOOL = "browser.get_computed_styles" as const;
+export const BROWSER_CLOSE_TOOL = "browser.close" as const;
 
 const projectCaptureTails = new Map<string, Promise<void>>();
 
@@ -365,5 +370,303 @@ export function registerBrowserTools(
         project?.close();
       }
     }),
+  );
+
+  server.registerTool(
+    BROWSER_TAKE_SNAPSHOT_TOOL,
+    {
+      title: "Take DOM snapshot",
+      description: "Return DOM snapshot metadata and node counts for a captured reference page.",
+      inputSchema: z.object({ viewportId: z.string().optional() }).strict(),
+      outputSchema: z.object({
+        schemaVersion: z.literal("1"),
+        ok: z.boolean(),
+        tool: z.literal(BROWSER_TAKE_SNAPSHOT_TOOL),
+        viewportId: z.string().optional(),
+        title: z.string().optional(),
+        url: z.string().optional(),
+        nodeCount: z.number().int().nonnegative().optional(),
+        error: z.string().optional(),
+      }).strict(),
+    },
+    async (input) => serializeProjectCapture(targetRoot, async () => {
+      let project: MimeraProject | undefined;
+      try {
+        project = await openProject(targetRoot);
+        const domEvidence = project.listEvidence().reverse().find((item) => {
+          const payload = item.payload as { kind?: string; viewport?: { id?: string } };
+          return payload.kind === "dom" && (!input.viewportId || payload.viewport?.id === input.viewportId);
+        });
+        if (!domEvidence) {
+          return {
+            content: [{ type: "text" as const, text: "No DOM snapshot evidence found" }],
+            structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_TAKE_SNAPSHOT_TOOL, error: "DOM snapshot not found" },
+            isError: true,
+          };
+        }
+        const payload = domEvidence.payload as { viewport: { id: string }; data: { title: string; url: string; nodes: unknown[] } };
+        return {
+          content: [{ type: "text" as const, text: `DOM snapshot for ${payload.viewport.id}: ${payload.data.nodes.length} nodes` }],
+          structuredContent: {
+            schemaVersion: "1",
+            ok: true,
+            tool: BROWSER_TAKE_SNAPSHOT_TOOL,
+            viewportId: payload.viewport.id,
+            title: payload.data.title,
+            url: payload.data.url,
+            nodeCount: payload.data.nodes.length,
+          },
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: "Failed to read snapshot" }],
+          structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_TAKE_SNAPSHOT_TOOL, error: error instanceof Error ? error.message : "Snapshot failed" },
+          isError: true,
+        };
+      } finally {
+        project?.close();
+      }
+    }),
+  );
+
+  server.registerTool(
+    BROWSER_TAKE_SCREENSHOT_TOOL,
+    {
+      title: "Take screenshot reference",
+      description: "Return screenshot artifact path and metadata for a captured reference page.",
+      inputSchema: z.object({ viewportId: z.string().optional() }).strict(),
+      outputSchema: z.object({
+        schemaVersion: z.literal("1"),
+        ok: z.boolean(),
+        tool: z.literal(BROWSER_TAKE_SCREENSHOT_TOOL),
+        viewportId: z.string().optional(),
+        path: z.string().optional(),
+        contentHash: z.string().optional(),
+        sizeBytes: z.number().int().nonnegative().optional(),
+        error: z.string().optional(),
+      }).strict(),
+    },
+    async (input) => serializeProjectCapture(targetRoot, async () => {
+      let project: MimeraProject | undefined;
+      try {
+        project = await openProject(targetRoot);
+        const screenshotEvidence = project.listEvidence().reverse().find((item) => {
+          const payload = item.payload as { kind?: string; viewport?: { id?: string } };
+          return payload.kind === "screenshot" && (!input.viewportId || payload.viewport?.id === input.viewportId);
+        });
+        if (!screenshotEvidence) {
+          return {
+            content: [{ type: "text" as const, text: "No screenshot evidence found" }],
+            structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_TAKE_SCREENSHOT_TOOL, error: "Screenshot evidence not found" },
+            isError: true,
+          };
+        }
+        const payload = screenshotEvidence.payload as { viewport: { id: string }; data: { path: string; contentHash: string; sizeBytes: number } };
+        return {
+          content: [{ type: "text" as const, text: `Screenshot artifact at ${payload.data.path}` }],
+          structuredContent: {
+            schemaVersion: "1",
+            ok: true,
+            tool: BROWSER_TAKE_SCREENSHOT_TOOL,
+            viewportId: payload.viewport.id,
+            path: payload.data.path,
+            contentHash: payload.data.contentHash,
+            sizeBytes: payload.data.sizeBytes,
+          },
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: "Failed to read screenshot evidence" }],
+          structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_TAKE_SCREENSHOT_TOOL, error: error instanceof Error ? error.message : "Screenshot failed" },
+          isError: true,
+        };
+      } finally {
+        project?.close();
+      }
+    }),
+  );
+
+  server.registerTool(
+    BROWSER_INSPECT_ELEMENT_TOOL,
+    {
+      title: "Inspect DOM element",
+      description: "Inspect element properties and layout geometry from captured reference evidence.",
+      inputSchema: z.object({ selector: z.string().min(1), viewportId: z.string().optional() }).strict(),
+      outputSchema: z.object({
+        schemaVersion: z.literal("1"),
+        ok: z.boolean(),
+        tool: z.literal(BROWSER_INSPECT_ELEMENT_TOOL),
+        viewportId: z.string().optional(),
+        element: z.object({
+          tag: z.string(),
+          id: z.string().optional(),
+          classes: z.array(z.string()),
+          role: z.string().optional(),
+          ariaLabel: z.string().optional(),
+          dataComponent: z.string().optional(),
+          domPath: z.string(),
+          text: z.string(),
+          visible: z.boolean(),
+          rect: z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() }),
+        }).optional(),
+        error: z.string().optional(),
+      }).strict(),
+    },
+    async (input) => serializeProjectCapture(targetRoot, async () => {
+      let project: MimeraProject | undefined;
+      try {
+        project = await openProject(targetRoot);
+        const domEvidence = project.listEvidence().reverse().find((item) => {
+          const payload = item.payload as { kind?: string; viewport?: { id?: string } };
+          return payload.kind === "dom" && (!input.viewportId || payload.viewport?.id === input.viewportId);
+        });
+        if (!domEvidence) {
+          return {
+            content: [{ type: "text" as const, text: "No DOM evidence found" }],
+            structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_INSPECT_ELEMENT_TOOL, error: "DOM evidence not found" },
+            isError: true,
+          };
+        }
+        const payload = domEvidence.payload as { viewport: { id: string }; data: { nodes: Array<{ tag: string; id?: string; classes: string[]; role?: string; ariaLabel?: string; dataComponent?: string; domPath: string; text: string; visible: boolean; rect: { x: number; y: number; width: number; height: number } }> } };
+        const query = input.selector.toLowerCase();
+        const node = payload.data.nodes.find((n) =>
+          n.tag === query ||
+          (n.id && n.id.toLowerCase() === query) ||
+          n.dataComponent?.toLowerCase() === query ||
+          n.classes.includes(query) ||
+          n.domPath.toLowerCase().includes(query),
+        );
+        if (!node) {
+          return {
+            content: [{ type: "text" as const, text: `Element matching '${input.selector}' not found` }],
+            structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_INSPECT_ELEMENT_TOOL, error: `Selector '${input.selector}' not found` },
+            isError: true,
+          };
+        }
+        return {
+          content: [{ type: "text" as const, text: `Inspected <${node.tag}> element: ${node.domPath}` }],
+          structuredContent: {
+            schemaVersion: "1",
+            ok: true,
+            tool: BROWSER_INSPECT_ELEMENT_TOOL,
+            viewportId: payload.viewport.id,
+            element: {
+              tag: node.tag,
+              ...(node.id ? { id: node.id } : {}),
+              classes: node.classes,
+              ...(node.role ? { role: node.role } : {}),
+              ...(node.ariaLabel ? { ariaLabel: node.ariaLabel } : {}),
+              ...(node.dataComponent ? { dataComponent: node.dataComponent } : {}),
+              domPath: node.domPath,
+              text: node.text,
+              visible: node.visible,
+              rect: node.rect,
+            },
+          },
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: "Failed to inspect element" }],
+          structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_INSPECT_ELEMENT_TOOL, error: error instanceof Error ? error.message : "Inspection failed" },
+          isError: true,
+        };
+      } finally {
+        project?.close();
+      }
+    }),
+  );
+
+  server.registerTool(
+    BROWSER_GET_COMPUTED_STYLES_TOOL,
+    {
+      title: "Get computed styles",
+      description: "Get computed CSS styles for an element from captured reference evidence.",
+      inputSchema: z.object({ selector: z.string().min(1), viewportId: z.string().optional() }).strict(),
+      outputSchema: z.object({
+        schemaVersion: z.literal("1"),
+        ok: z.boolean(),
+        tool: z.literal(BROWSER_GET_COMPUTED_STYLES_TOOL),
+        viewportId: z.string().optional(),
+        styles: z.record(z.string(), z.string()).optional(),
+        error: z.string().optional(),
+      }).strict(),
+    },
+    async (input) => serializeProjectCapture(targetRoot, async () => {
+      let project: MimeraProject | undefined;
+      try {
+        project = await openProject(targetRoot);
+        const domEvidence = project.listEvidence().reverse().find((item) => {
+          const payload = item.payload as { kind?: string; viewport?: { id?: string } };
+          return payload.kind === "dom" && (!input.viewportId || payload.viewport?.id === input.viewportId);
+        });
+        if (!domEvidence) {
+          return {
+            content: [{ type: "text" as const, text: "No DOM evidence found" }],
+            structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_GET_COMPUTED_STYLES_TOOL, error: "DOM evidence not found" },
+            isError: true,
+          };
+        }
+        const payload = domEvidence.payload as { viewport: { id: string }; data: { nodes: Array<{ tag: string; id?: string; classes: string[]; dataComponent?: string; domPath: string; styles: Record<string, string> }> } };
+        const query = input.selector.toLowerCase();
+        const node = payload.data.nodes.find((n) =>
+          n.tag === query ||
+          (n.id && n.id.toLowerCase() === query) ||
+          n.dataComponent?.toLowerCase() === query ||
+          n.classes.includes(query) ||
+          n.domPath.toLowerCase().includes(query),
+        );
+        if (!node) {
+          return {
+            content: [{ type: "text" as const, text: `Element matching '${input.selector}' not found` }],
+            structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_GET_COMPUTED_STYLES_TOOL, error: `Selector '${input.selector}' not found` },
+            isError: true,
+          };
+        }
+        return {
+          content: [{ type: "text" as const, text: `Computed styles for <${node.tag}>` }],
+          structuredContent: {
+            schemaVersion: "1",
+            ok: true,
+            tool: BROWSER_GET_COMPUTED_STYLES_TOOL,
+            viewportId: payload.viewport.id,
+            styles: node.styles,
+          },
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: "Failed to get computed styles" }],
+          structuredContent: { schemaVersion: "1", ok: false, tool: BROWSER_GET_COMPUTED_STYLES_TOOL, error: error instanceof Error ? error.message : "Computed styles failed" },
+          isError: true,
+        };
+      } finally {
+        project?.close();
+      }
+    }),
+  );
+
+  server.registerTool(
+    BROWSER_CLOSE_TOOL,
+    {
+      title: "Close browser context",
+      description: "Close browser session context cleanly.",
+      inputSchema: z.object({}).strict(),
+      outputSchema: z.object({
+        schemaVersion: z.literal("1"),
+        ok: z.boolean(),
+        tool: z.literal(BROWSER_CLOSE_TOOL),
+        message: z.string(),
+      }).strict(),
+    },
+    async () => {
+      return {
+        content: [{ type: "text" as const, text: "Browser context closed" }],
+        structuredContent: {
+          schemaVersion: "1",
+          ok: true,
+          tool: BROWSER_CLOSE_TOOL,
+          message: "Browser tools closed cleanly",
+        },
+      };
+    },
   );
 }

@@ -68,6 +68,28 @@ beforeAll(() => {
           },
         });
       }
+      if (url.pathname === "/retry-storm") {
+        return new Response(`<!doctype html>
+          <html><head><title>Retry Storm Fixture</title></head>
+          <body>
+            <h1>Retry Storm</h1>
+            <script>
+              window.pollDone = Promise.all([
+                fetch("/api/poll?id=1"),
+                fetch("/api/poll?id=2"),
+                fetch("/api/poll?id=3"),
+                fetch("/api/poll?id=4")
+              ]);
+            </script>
+          </body></html>`, {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      if (url.pathname === "/api/poll") {
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
       if (url.pathname === "/") {
         return new Response(await readFile(fixture), {
           headers: { "content-type": "text/html; charset=utf-8" },
@@ -222,3 +244,32 @@ test("refuses capture before reference authorization", async () => {
   expect(project.listEvidence()).toEqual([]);
   project.close();
 });
+
+test("paces rapid same-origin subrequests during reference capture", async () => {
+  const project = await createProject();
+  await authorizeProject(project);
+  const service = new ReferenceCaptureService({
+    allowHttp: true,
+    allowLoopback: true,
+    minimumIntervalMs: 50,
+  });
+
+  const result = await service.capture(project, {
+    url: `${origin}/retry-storm`,
+    viewports: [{ id: "desktop", width: 1280, height: 800, isMobile: false }],
+  });
+
+  expect(result.session.status).toBe("REFERENCE_CAPTURED");
+  const capture = result.capture.captures[0]!;
+  const pollResponses = capture.network.filter(
+    (event) => event.kind === "response" && event.url.includes("/api/poll"),
+  );
+  expect(pollResponses).toHaveLength(4);
+
+  const timestamps = pollResponses.map((event) => new Date(event.timestamp).getTime());
+  for (let i = 1; i < timestamps.length; i++) {
+    expect(timestamps[i]! - timestamps[i - 1]!).toBeGreaterThanOrEqual(30);
+  }
+
+  project.close();
+}, 30_000);

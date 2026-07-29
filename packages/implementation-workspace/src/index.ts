@@ -132,3 +132,5 @@ export class ImplementationWorkspaceService {
     };
   }
 }
+
+export * from "./review-aggregator.ts";

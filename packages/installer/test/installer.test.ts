@@ -109,3 +109,29 @@ test("detects host surfaces without inventing unsupported hosts", async () => {
   expect(await detectHosts(target)).toEqual(["claude-code", "cursor"]);
   expect(await detectHosts(await root())).toEqual(["generic"]);
 });
+
+test("uninstalls host files cleanly and restores backups when requested", async () => {
+  const target = await root();
+  await Bun.write(join(target, ".cursor/rules/mimera.mdc"), "original cursor rule\n");
+
+  const service = installer();
+  await service.install({
+    targetRoot: target,
+    hosts: ["cursor"],
+    force: true,
+  });
+
+  const uninstallResult = await service.uninstall({
+    targetRoot: target,
+    hosts: ["cursor"],
+    restoreBackups: true,
+  });
+
+  expect(uninstallResult.restored).toContain(".cursor/rules/mimera.mdc");
+  expect(await readFile(join(target, ".cursor/rules/mimera.mdc"), "utf8")).toBe(
+    "original cursor rule\n",
+  );
+  await expect(stat(join(target, ".mimera/installations/cursor.json"))).rejects.toMatchObject({
+    code: "ENOENT",
+  });
+});

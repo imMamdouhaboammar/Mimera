@@ -185,7 +185,7 @@ test("lists a project-bound browser.open_reference MCP tool without path or poli
 
   const listed = await client.listTools();
 
-  expect(listed.tools).toHaveLength(1);
+  expect(listed.tools).toHaveLength(6);
   expect(listed.tools[0]?.name).toBe("browser.open_reference");
   expect(listed.tools[0]?.inputSchema).toMatchObject({
     type: "object",
@@ -451,4 +451,80 @@ test("serializes concurrent captures for one project without orphaning artifacts
     { withFileTypes: true },
   );
   expect(captureDirectories.filter((entry) => entry.isDirectory())).toHaveLength(1);
+});
+
+test("executes expanded browser MCP tools (snapshot, screenshot, inspect, computed_styles, close)", async () => {
+  const root = await createAuthorizedProject();
+  const client = await createClient(root, {
+    captureService: new ReferenceCaptureService({ allowHttp: true, allowLoopback: true, minimumIntervalMs: 0 }),
+  });
+
+  // First capture reference URL to generate evidence
+  const captureResult = await client.callTool({
+    name: "browser.open_reference",
+    arguments: { url: origin, viewports: [desktop] },
+  });
+  expect(captureResult.isError).toBe(undefined);
+
+  // 1. Test browser.take_snapshot
+  const snapshotResult = await client.callTool({
+    name: "browser.take_snapshot",
+    arguments: { viewportId: "desktop" },
+  });
+  expect(snapshotResult.isError).toBe(undefined);
+  expect(snapshotResult.structuredContent).toMatchObject({
+    ok: true,
+    tool: "browser.take_snapshot",
+    viewportId: "desktop",
+    title: "Mimera Navbar Fixture",
+  });
+
+  // 2. Test browser.take_screenshot
+  const screenshotResult = await client.callTool({
+    name: "browser.take_screenshot",
+    arguments: { viewportId: "desktop" },
+  });
+  expect(screenshotResult.isError).toBe(undefined);
+  expect(screenshotResult.structuredContent).toMatchObject({
+    ok: true,
+    tool: "browser.take_screenshot",
+    viewportId: "desktop",
+  });
+
+  // 3. Test browser.inspect_element
+  const inspectResult = await client.callTool({
+    name: "browser.inspect_element",
+    arguments: { selector: "header", viewportId: "desktop" },
+  });
+  expect(inspectResult.isError).toBe(undefined);
+  expect(inspectResult.structuredContent).toMatchObject({
+    ok: true,
+    tool: "browser.inspect_element",
+    element: {
+      tag: "header",
+    },
+  });
+
+  // 4. Test browser.get_computed_styles
+  const stylesResult = await client.callTool({
+    name: "browser.get_computed_styles",
+    arguments: { selector: "header", viewportId: "desktop" },
+  });
+  expect(stylesResult.isError).toBe(undefined);
+  expect(stylesResult.structuredContent).toMatchObject({
+    ok: true,
+    tool: "browser.get_computed_styles",
+  });
+
+  // 5. Test browser.close
+  const closeResult = await client.callTool({
+    name: "browser.close",
+    arguments: {},
+  });
+  expect(closeResult.isError).toBe(undefined);
+  expect(closeResult.structuredContent).toMatchObject({
+    ok: true,
+    tool: "browser.close",
+    message: "Browser tools closed cleanly",
+  });
 });
