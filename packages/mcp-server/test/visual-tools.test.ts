@@ -70,7 +70,9 @@ test("lists visual tools in MCP server catalog alongside browser tools", async (
   expect(toolNames).toContain("visual.create_overlay");
   expect(toolNames).toContain("visual.score");
   expect(toolNames).toContain("visual.mask_dynamic_region");
-  expect(listed.tools).toHaveLength(12);
+  expect(toolNames).toContain("visual.structural_similarity");
+  expect(toolNames).toContain("visual.audit_simulation");
+  expect(listed.tools).toHaveLength(17);
 });
 
 test("executes visual.compare and visual.compare_element via MCP JSON-RPC", async () => {
@@ -165,5 +167,32 @@ test("executes visual.measure_geometry visual.create_overlay visual.score visual
     tool: "visual.mask_dynamic_region",
     maskedRegionCount: 1,
     maskedAreaPixels: 1000,
+  });
+
+  // 5. structural_similarity
+  const { encodePng } = await import("@mimera/visual-tools");
+  const { writeFile } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const sampleImage = {
+    width: 10,
+    height: 10,
+    data: new Uint8Array(10 * 10 * 4).fill(255),
+  };
+  const pngBytes = encodePng(sampleImage);
+  const p1 = join(root, "test1.png");
+  const p2 = join(root, "test2.png");
+  await writeFile(p1, pngBytes);
+  await writeFile(p2, pngBytes);
+
+  const simRes = await client.callTool({
+    name: "visual.structural_similarity",
+    arguments: { referencePath: p1, targetPath: p2 },
+  });
+  expect(simRes.isError).toBe(undefined);
+  expect(simRes.structuredContent).toMatchObject({
+    ok: true,
+    tool: "visual.structural_similarity",
+    status: "pass",
+    overallScore: 100,
   });
 });

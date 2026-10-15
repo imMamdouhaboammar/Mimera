@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build and output artifacts
+dist/
+ci-dist/
+test-dist/
+storefront-dist/
+
+# OS and IDE files
+.DS_Store
+*.log
+.vscode/
+.idea/

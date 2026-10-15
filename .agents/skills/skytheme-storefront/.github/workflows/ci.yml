@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Run Behavioral Evaluation Suite
+        run: bun scripts/run-evals.ts
+
+      - name: Run Storefront Generator & Invariant Validator
+        run: |
+          bun scripts/generate-storefront.ts --name "CI Brand" --out ./ci-dist
+          bun scripts/validate-storefront.ts ./ci-dist/index.html

@@ -87,6 +87,9 @@
       ],
       "@mimera/visual-tools": [
         "packages/visual-tools/src/index.ts"
+      ],
+      "@mimera/skytheme-storefront": [
+        "packages/skytheme-storefront/src/index.ts"
       ]
     }
   },

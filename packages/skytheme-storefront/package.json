@@ -1,0 +1,17 @@
+{
+  "name": "@mimera/skytheme-storefront",
+  "version": "1.2.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mimera/contracts": "workspace:*",
+    "playwright": "1.61.0",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

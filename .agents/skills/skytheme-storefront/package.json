@@ -1,0 +1,54 @@
+{
+  "name": "skytheme-storefront",
+  "version": "1.1.0",
+  "description": "Ultra-luxury fashion e-commerce storefront skill engineered from SkyTheme. Complete design tokens, Lenis smooth scrolling, Web Components, and all 40+ commerce features.",
+  "author": "Mamdouh Aboammar",
+  "license": "MIT",
+  "main": "SKILL.md",
+  "bin": {
+    "skytheme-storefront": "./bin/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imMamdouhaboammar/skytheme-storefront.git"
+  },
+  "homepage": "https://github.com/imMamdouhaboammar/skytheme-storefront#readme",
+  "bugs": {
+    "url": "https://github.com/imMamdouhaboammar/skytheme-storefront/issues"
+  },
+  "files": [
+    "SKILL.md",
+    "bin",
+    "scripts",
+    "references",
+    "assets",
+    "agents",
+    "evals",
+    "marketplace.json",
+    ".skills.json",
+    "install.sh"
+  ],
+  "scripts": {
+    "eval": "bun scripts/run-evals.ts",
+    "test": "bun scripts/run-evals.ts",
+    "generate": "bun scripts/generate-storefront.ts",
+    "validate": "bun scripts/validate-storefront.ts"
+  },
+  "keywords": [
+    "agent-skill",
+    "ecommerce",
+    "shopify-theme",
+    "skytheme",
+    "luxury-fashion",
+    "storefront",
+    "lenis",
+    "gsap",
+    "motion",
+    "lookbook",
+    "cart-drawer",
+    "web-components",
+    "skills-sh",
+    "claude-code",
+    "cursor"
+  ]
+}

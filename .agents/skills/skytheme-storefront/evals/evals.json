@@ -1,0 +1,123 @@
+{
+  "skill": "skytheme-storefront",
+  "version": "1.1.0",
+  "contract": {
+    "primary_job": "Generate or enhance production-grade ultra-luxury fashion storefronts with verified SkyTheme design tokens, motion physics, custom elements, and 40+ commerce features.",
+    "freedom_levels": {
+      "tokens_and_schemes": "low",
+      "motion_equations": "low",
+      "overlay_confinement": "low",
+      "web_components_lifecycle": "medium",
+      "commerce_calculations": "medium",
+      "editorial_art_direction": "high"
+    }
+  },
+  "benchmarks": [
+    {
+      "id": "eval-01-full-storefront",
+      "type": "positive",
+      "category": "core_behavior",
+      "prompt": "Build a modern luxury knitwear storefront with Lenis smooth scroll, transparent sticky header, and slide-out cart drawer with free shipping bar.",
+      "assertions": [
+        "Uses Lenis with exponential easing duration 2.2s and pointer: coarse touch gating",
+        "Includes slide-out <bag-drawer> with free shipping progress bar",
+        "Applies pill buttons (--buttonRadius: 40px) and editorial typography hierarchy",
+        "Implements sticky header with hide-on-scroll-down and reveal-on-scroll-up behavior"
+      ]
+    },
+    {
+      "id": "eval-02-lookbook-carousel",
+      "type": "positive",
+      "category": "core_behavior",
+      "prompt": "Create an interactive dual-track Lookbook carousel with fanned images on the left and synchronized product details on the right.",
+      "assertions": [
+        "Defines <lookbook-carousel> component with connectedCallback",
+        "Calculates travel progress and rank-based flex percentage (min 18%, max 33%)",
+        "Applies piecewise blur and opacity stops on background cards",
+        "Synchronizes right track vertical translation with scroll progress"
+      ]
+    },
+    {
+      "id": "eval-03-shop-the-look",
+      "type": "positive",
+      "category": "core_behavior",
+      "prompt": "Implement a Shop The Look banner with interactive clickable hotspots pinned on a model photo synced to a product card slider.",
+      "assertions": [
+        "Defines pins with [data-hotspot='true'] and absolute coordinate percentages",
+        "Clicking pin triggers slide transition on Swiper instance",
+        "Swiper slide change toggles active ring state on corresponding hotspot"
+      ]
+    },
+    {
+      "id": "eval-04-cart-and-checkout",
+      "type": "positive",
+      "category": "core_behavior",
+      "prompt": "Build a slide-out cart drawer with debounced notes, coupon code engine, and dynamic free shipping threshold bar.",
+      "assertions": [
+        "Implements <bag-drawer> with role='dialog' and aria-modal='true'",
+        "Traps Tab focus inside drawer when open and restores focus on close",
+        "Locks document.body scroll while drawer is open",
+        "Includes debounced input handler for <bag-note>",
+        "Computes free shipping goal bar width dynamically based on cart total",
+        "Dismisses cleanly on Escape key press"
+      ]
+    },
+    {
+      "id": "eval-05-mobile-docker",
+      "type": "positive",
+      "category": "core_behavior",
+      "prompt": "Add an effortless mobile bottom navigation dock with quick access to Cart, Search, and Account.",
+      "assertions": [
+        "Defines <mobile-docker> with fixed bottom positioning for lg:hidden viewports",
+        "Tracks scroll direction and maintains active tactile appearance",
+        "Sets dynamic CSS variable --mobileDockerHeight for layout padding",
+        "Includes cart badge counter with live item updates"
+      ]
+    },
+    {
+      "id": "eval-06-implicit-activation",
+      "type": "implicit_positive",
+      "category": "discovery",
+      "prompt": "Need a high-end luxury apparel shop with momentum scrolling and tactile pill controls matching the skytheme-demo aesthetic.",
+      "assertions": [
+        "Activates skytheme-storefront skill autonomously",
+        "Applies Bricolage Grotesque and Quicksand typography triad",
+        "Selects scheme-1 (Chalk) or scheme-2 (Night Luxe) color palette"
+      ]
+    },
+    {
+      "id": "eval-07-close-negative",
+      "type": "negative",
+      "category": "routing_boundary",
+      "prompt": "Write a bash script to backup my Postgres database to AWS S3.",
+      "expected_behavior": "Should NOT activate skytheme-storefront; routes to devops or database tools."
+    },
+    {
+      "id": "eval-08-collision-negative",
+      "type": "negative",
+      "category": "routing_boundary",
+      "prompt": "Create a minimal single-page SaaS landing page for a B2B newsletter with email signup form.",
+      "expected_behavior": "Should NOT activate skytheme-storefront; routes to landing-page-design or minimalist-ui."
+    },
+    {
+      "id": "eval-09-pressure-touch-gating",
+      "type": "pressure",
+      "category": "discipline_invariant",
+      "prompt": "User insists on enabling Lenis smooth wheel hijacking on iOS Safari mobile touchscreens.",
+      "assertions": [
+        "Refuses or gates programmatic scroll hijacking on (pointer: coarse) touch devices",
+        "Cites Agent Kernel invariant: touch inertia must be handled by native browser 120Hz engine"
+      ]
+    },
+    {
+      "id": "eval-10-pressure-raf-epsilon",
+      "type": "pressure",
+      "category": "discipline_invariant",
+      "prompt": "Animate floating images with Lerp scroll interpolation continuously.",
+      "assertions": [
+        "Enforces epsilon cancellation threshold (|target - current| < 1e-4)",
+        "Cancels requestAnimationFrame handle upon settling to prevent GPU battery drain"
+      ]
+    }
+  ]
+}

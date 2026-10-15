@@ -1,0 +1,20 @@
+{
+  "name": "skytheme-storefront",
+  "displayName": "SkyTheme Luxury Fashion Storefront",
+  "version": "1.1.0",
+  "description": "Reference-guided luxury storefront architecture, browser-tested HTML preview and minimal Shopify Liquid starter. Further documented features require integration.",
+  "category": "E-Commerce & Frontend",
+  "author": "Mamdouh Aboammar",
+  "homepage": "https://github.com/imMamdouhaboammar/skytheme-storefront",
+  "icon": "assets/large-logo.svg",
+  "tags": [
+    "ecommerce",
+    "shopify",
+    "luxury",
+    "fashion",
+    "storefront",
+    "lenis",
+    "gsap",
+    "web-components"
+  ]
+}

@@ -12,6 +12,7 @@
     "@mimera/reference-capture": "workspace:*",
     "@mimera/reference-policy": "workspace:*",
     "@mimera/visual-tools": "workspace:*",
+    "@mimera/skytheme-storefront": "workspace:*",
     "@modelcontextprotocol/sdk": "1.30.0",
     "zod": "^4.0.17"
   },

@@ -1,0 +1,17 @@
+display_name: "SkyTheme Luxury Storefront"
+short_description: "Reference-guided storefront engineering and tested HTML preview"
+brand_color: "#D4AF37"
+default_prompt: "Follow references/clean-room-toolchain.md and agents/clean-room-operator.md. Verify REA, Chrome DevTools MCP, Playwright and Spector.js (required for WebGL) setup; observe and specify reference motion before independent Liquid/GSAP/Three.js development. Implement missing features with tests, compare video and screenshots at aligned states, verify the live Shopify dev store and Theme Editor, then run the evidence audit. Do not claim parity on preview/static tests."
+icons:
+  small: "assets/small-logo.svg"
+  large: "assets/large-logo.svg"
+categories:
+  - "ecommerce"
+  - "frontend"
+  - "design-systems"
+tags:
+  - "luxury-fashion"
+  - "lenis-smooth-scroll"
+  - "shopify-theme"
+  - "lookbook-carousel"
+  - "web-components"

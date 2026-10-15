@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build and output artifacts
+dist/
+ci-dist/
+test-dist/
+storefront-dist/
+
+# OS and IDE files
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Local clean-room reference captures must not be committed
+workbench/
+.skytheme-workbench/

@@ -4,6 +4,7 @@ import {
   type RegisterBrowserToolsOptions,
 } from "./browser-tools.ts";
 import { registerVisualTools } from "./visual-tools.ts";
+import { registerStorefrontTools } from "./storefront-tools.ts";
 
 export interface CreateMimeraMcpServerOptions extends RegisterBrowserToolsOptions {
   name?: string;
@@ -23,8 +24,10 @@ export function createMimeraMcpServer(
     ...(options.openProject ? { openProject: options.openProject } : {}),
   });
   registerVisualTools(server);
+  registerStorefrontTools(server);
   return server;
 }
 
 export * from "./browser-tools.ts";
 export * from "./visual-tools.ts";
+export * from "./storefront-tools.ts";

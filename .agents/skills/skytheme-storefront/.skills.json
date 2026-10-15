@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.agentskills.io/v1/skill.json",
+  "name": "skytheme-storefront",
+  "version": "1.1.0",
+  "description": "Generate complete luxury fashion e-commerce storefronts with SkyTheme aesthetic, Lenis smooth scrolling, dual-track lookbooks, and 40+ merchandising features.",
+  "entrypoint": "SKILL.md",
+  "icon": "assets/large-logo.svg",
+  "references": [
+    "references/design-system-and-tokens.md",
+    "references/animation-engine-and-motion.md",
+    "references/cart-and-checkout-architecture.md",
+    "references/merchandising-and-media.md",
+    "references/product-buy-box-and-variants.md",
+    "references/product-discovery-and-navigation.md",
+    "references/marketing-and-conversion.md",
+    "references/full-page-templates.md"
+  ],
+  "scripts": [
+    "scripts/generate-storefront.ts",
+    "scripts/validate-storefront.ts",
+    "scripts/run-evals.ts"
+  ]
+}
