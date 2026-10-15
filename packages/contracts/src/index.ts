@@ -192,6 +192,53 @@ export const ApprovalDecisionSchema = z.object({
 });
 export type ApprovalDecision = z.infer<typeof ApprovalDecisionSchema>;
 
+export const RegressionLockFileSchema = z.object({
+  relativePath: NonEmptyStringSchema,
+  sha256: Sha256Schema,
+  sizeBytes: z.number().int().nonnegative(),
+});
+export type RegressionLockFile = z.infer<typeof RegressionLockFileSchema>;
+
+export const RegressionLockSchema = z.object({
+  schemaVersion: z.literal("1"),
+  componentId: NonEmptyStringSchema,
+  sessionId: NonEmptyStringSchema,
+  files: z.array(RegressionLockFileSchema).min(1),
+  approvedEvidenceHash: Sha256Schema.optional(),
+  lockedAt: ISODateTimeSchema,
+  lockedBy: NonEmptyStringSchema,
+  locked: z.literal(true),
+});
+export type RegressionLock = z.infer<typeof RegressionLockSchema>;
+
+export const TestAssertionKindSchema = z.enum([
+  "dom-structure",
+  "computed-style",
+  "navigation",
+  "media-query",
+  "accessibility",
+  "visual-parity",
+]);
+export type TestAssertionKind = z.infer<typeof TestAssertionKindSchema>;
+
+export const ComponentTestCaseSchema = z.object({
+  name: NonEmptyStringSchema,
+  kind: TestAssertionKindSchema,
+  assertion: NonEmptyStringSchema,
+  expected: NonEmptyStringSchema,
+});
+export type ComponentTestCase = z.infer<typeof ComponentTestCaseSchema>;
+
+export const TestDesignSpecSchema = z.object({
+  schemaVersion: z.literal("1"),
+  componentId: NonEmptyStringSchema,
+  testFileRelativePath: NonEmptyStringSchema,
+  testCases: z.array(ComponentTestCaseSchema).min(1),
+  generatedSourceCode: NonEmptyStringSchema,
+  designedAt: ISODateTimeSchema,
+});
+export type TestDesignSpec = z.infer<typeof TestDesignSpecSchema>;
+
 export const HookPhaseSchema = z.enum([
   "pre-tool-call",
   "post-tool-call",

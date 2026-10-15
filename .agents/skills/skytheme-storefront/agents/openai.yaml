@@ -1,0 +1,17 @@
+display_name: "SkyTheme Luxury Storefront"
+short_description: "Generate ultra-luxury fashion storefronts with Lenis motion & 40+ features"
+brand_color: "#D4AF37"
+default_prompt: "Generate a complete luxury fashion e-commerce storefront matching SkyTheme design tokens and motion physics"
+icons:
+  small: "assets/small-logo.svg"
+  large: "assets/large-logo.svg"
+categories:
+  - "ecommerce"
+  - "frontend"
+  - "design-systems"
+tags:
+  - "luxury-fashion"
+  - "lenis-smooth-scroll"
+  - "shopify-theme"
+  - "lookbook-carousel"
+  - "web-components"

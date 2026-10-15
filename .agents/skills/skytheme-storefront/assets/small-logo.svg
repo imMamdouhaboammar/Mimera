@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGradSmall" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A0D14"/>
+      <stop offset="50%" stop-color="#121624"/>
+      <stop offset="100%" stop-color="#1A1F36"/>
+    </linearGradient>
+    <linearGradient id="goldGradSmall" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCEBA4"/>
+      <stop offset="50%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#AA7C11"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded Squircle Base -->
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="url(#bgGradSmall)" stroke="url(#goldGradSmall)" stroke-width="8"/>
+  
+  <!-- Stylized Luxury S Monogram & Diamond Crown -->
+  <g transform="translate(256, 256)">
+    <!-- Diamond Peak -->
+    <polygon points="0,-140 45,-85 0,-30 -45,-85" fill="url(#goldGradSmall)"/>
+    <!-- Outer Diamond Facets -->
+    <polygon points="0,-140 90,-70 45,-85" fill="#FCEBA4" opacity="0.8"/>
+    <polygon points="0,-140 -90,-70 -45,-85" fill="#996F0D" opacity="0.8"/>
+    
+    <!-- Fluid Architectural Ribbon S -->
+    <path d="M 60,-15 C 60,-15 30,-50 -20,-50 C -65,-50 -85,-20 -85,15 C -85,65 10,75 10,110 C 10,135 -15,145 -45,145 C -75,145 -95,120 -95,120" 
+          stroke="url(#goldGradSmall)" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <path d="M -60,15 C -60,15 -30,50 20,50 C 65,50 85,20 85,-15 C 85,-65 -10,-75 -10,-110 C -10,-135 15,-145 45,-145 C 75,-145 95,-120 95,-120" 
+          stroke="url(#goldGradSmall)" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.5"/>
+  </g>
+</svg>

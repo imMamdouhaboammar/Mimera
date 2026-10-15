@@ -17,6 +17,10 @@
     "@mimera/preflight": "workspace:*",
     "@mimera/reference-capture": "workspace:*",
     "@mimera/design-analysis": "workspace:*",
-    "@mimera/component-spec": "workspace:*"
+    "@mimera/component-spec": "workspace:*",
+    "@mimera/browser-lab": "workspace:*",
+    "@mimera/visual-tools": "workspace:*",
+    "@mimera/implementation-workspace": "workspace:*",
+    "@mimera/skytheme-storefront": "workspace:*"
   }
 }

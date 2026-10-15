@@ -1,0 +1,87 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  runtime-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Toolchain unit tests (no network/tool installs)
+        run: node --test tests/support-tools.test.mjs tests/clean-room.test.mjs tests/capture-motion.test.mjs tests/spector.test.mjs tests/audit-regressions.test.mjs tests/metadata.test.mjs
+      - name: Validate CLI toolchain routing and no-write doctor
+        run: |
+          bun bin/cli.js tools doctor --json
+          bun bin/cli.js spector doctor
+          bun bin/cli.js tools plan
+          bun bin/cli.js spector plan
+      - name: Install dependencies
+        run: bun install
+      - name: Deterministic generator tests
+        run: bun scripts/run-evals.ts
+      - name: Generate and validate HTML preview
+        run: |
+          bun scripts/generate-storefront.ts --name "CI Brand" --out ./ci-dist
+          bun scripts/validate-storefront.ts ./ci-dist/index.html
+          # Existing output files must survive repeated generation attempts unchanged
+          sha256sum ci-dist/index.html > /tmp/sky-html-hash
+          if bun scripts/generate-storefront.ts --name "Overwritten" --out ./ci-dist; then
+            echo "HTML generator overwrote an existing project"
+            exit 1
+          fi
+          sha256sum -c /tmp/sky-html-hash
+      - name: CLI exit codes and Shopify subcommand
+        run: |
+          bun bin/cli.js shopify --out ./ci-cli-shopify
+          test -f ./ci-cli-shopify/layout/theme.liquid
+          if bun bin/cli.js generate --scheme invalid --out ./invalid-dist; then
+            echo "CLI incorrectly accepted invalid input"
+            exit 1
+          fi
+      - name: Check safe installer
+        run: |
+          bash -n install.sh
+          echo "fixture-not-for-distribution" > .skytheme-private-ci-token
+          mkdir -p "$RUNNER_TEMP/skyhome"
+          HOME="$RUNNER_TEMP/skyhome" bash install.sh
+          test -f "$RUNNER_TEMP/skyhome/.agents/skills/skytheme-storefront/SKILL.md"
+          test ! -e "$RUNNER_TEMP/skyhome/.agents/skills/skytheme-storefront/.git"
+          test ! -e "$RUNNER_TEMP/skyhome/.agents/skills/skytheme-storefront/.skytheme-private-ci-token"
+          rm .skytheme-private-ci-token
+          HOME="$RUNNER_TEMP/skyhome" bash install.sh | grep 'SKIP existing installation'
+      - name: Generate Shopify OS2 starter
+        run: |
+          bun scripts/generate-shopify-theme.ts --out ./ci-shopify
+          test -f ci-shopify/layout/theme.liquid
+          test -f ci-shopify/templates/index.json
+          test -f ci-shopify/sections/immersive-hero.liquid
+          test -f ci-shopify/config/settings_schema.json
+          if grep -Fq 'id="shopify-section-{{ section.id }}"' ci-shopify/sections/immersive-hero.liquid; then
+            echo "Section repeats Shopify's automatic wrapper ID"
+            exit 1
+          fi
+          sha256sum ci-shopify/layout/theme.liquid > /tmp/sky-shopify-hash
+          if bun scripts/generate-shopify-theme.ts --out ./ci-shopify; then
+            echo "Shopify generator overwrote an existing project"
+            exit 1
+          fi
+          sha256sum -c /tmp/sky-shopify-hash
+      - name: Install Shopify CLI
+        run: npm install -g @shopify/cli
+      - name: Shopify Theme Check (Liquid starter)
+        run: shopify theme check --path ./ci-shopify --fail-level error --no-input
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+      - name: Browser interaction tests
+        run: bun run test:browser

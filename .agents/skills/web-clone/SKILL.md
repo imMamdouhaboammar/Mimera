@@ -31,8 +31,8 @@ od:
 把"复刻一个网站"做成可重复的流程。在 Open Design 中，默认在当前项目目录工作：`NOTES.md`、`RECON/`、`CLONE_REPORT.md`、`CLONE_AUDIT.md` 和最终可预览的 `index.html` 都应写在当前项目内，除非用户明确指定外部工作目录。
 
 **Open Design 环境准备（跑任何 `scripts/` 前先看）**：
-- 本 skill 的脚本会被 stage 到项目内 `.od-skills/<插件目录>/scripts/`（skill 前言里有确切路径）。文中命令写的 `node scripts/xxx.mjs` 按该路径解析，例如 `node .od-skills/<插件目录>/scripts/recon-site.mjs ...`；`RECON/`、`assets/` 等产物仍写到项目根。
-- 脚本依赖 Playwright。首次在项目里跑之前执行一次 `npm install -D playwright`（在项目根）；本机装有 Chrome 时脚本会自动走 `channel:"chrome"`，无需再下浏览器，否则补一句 `npx playwright install chromium`。**不许因为"环境没配好"就跳过脚本改为目测**——装依赖只要一分钟。
+- 本 skill 的脚本会被 stage 到项目内 `.od-skills/<插件目录>/scripts/`（skill 前言里有确切路径）。文中命令写的 `node scripts/xxx.mjs` 按该路径解析，例如 `bun scripts/recon-site.mjs ...`；`RECON/`、`assets/` 等产物仍写到项目根。
+- 脚本依赖 Playwright。必须使用 Bun 运行时：执行 `bun add -d playwright`（在项目根）；本机装有 Chrome 时脚本会自动走 `channel:"chrome"`，无需再下浏览器，否则补一句 `bunx playwright install chromium`。**不许因为"环境没配好"就跳过脚本改为目测**——装依赖只要一分钟。
 
 ## 头号铁律：真源码至上，绝不信 AI 推测的代码
 
@@ -289,3 +289,26 @@ SSL_CERT_FILE=/etc/ssl/cert.pem gh api repos/<u>/<r> | jq '.license'  # + 找 LI
 
 ## 旗舰案例
 `./marbles-clone/` — 原生 WebGL + SVG Filter + 自研物理的玻璃弹珠站，逐字节忠实复刻 + 完整 TEARDOWN，是"WebGL 重前端分支"的范例。
+
+---
+
+## Mimera 原生引擎协同 (Mimera Visual Simulation & Parity Engine)
+
+复刻过程中，可直接调用 Mimera 原生引擎进行工业级端到端仿真比对与回归锁定：
+
+1. **零臆测样式提取 (Zero-Guessing Computed Style)**:
+   - 绝不目测或推算 CSS，通过 Playwright 驱动 `window.getComputedStyle(element)` 提取真实尺寸与行高。
+2. **动态噪声规整 (Dynamic Noise Normalization)**:
+   - 比对前统一将视频与画布透明度置为 0.3 (`opacity = '0.3'`)，排除异步渲染噪点干扰。
+3. **多端仿真比对 (Automated Multi-Viewport Audit)**:
+   ```bash
+   bun mimera simulate --reference <原站URL> --target http://localhost:5173/ --threshold 90
+   ```
+   - 桌面端 (`1440x900`) 与移动端 (`390x844`) 每隔 700px 自动双屏截取并计算 Structural Edge MSE 与 48-bin 颜色直方图。
+   - 综合相似度低于 **+90.0%** 自动阻断并要求返工。
+4. **加密防篡改锁定 (Regression Locking)**:
+   ```bash
+   bun mimera lock --component <component-id> -f <files...>
+   bun mimera lock --verify
+   ```
+

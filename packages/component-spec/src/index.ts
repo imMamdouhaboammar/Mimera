@@ -459,3 +459,7 @@ export class ComponentSpecificationService {
     return { session, spec, writeScope };
   }
 }
+
+export * from "./test-designer.ts";
+export * from "./regression-lock.ts";
+

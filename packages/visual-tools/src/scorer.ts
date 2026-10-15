@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { GeometryComparison } from "./geometry.ts";
 import type { PixelDiffResult } from "./pixel-diff.ts";
+import type { ColorHistogramResult, EdgeSimilarityResult } from "./edge-detection.ts";
 
 export const VisualVetoCodeSchema = z.enum([
   "LAYOUT_DISPLACEMENT_EXCEEDED",
@@ -39,9 +40,12 @@ export type VisualSimulationScore = z.infer<typeof VisualSimulationScoreSchema>;
 export interface ScoreVisualSimulationInput {
   pixelDiff?: PixelDiffResult;
   geometryComparisons?: GeometryComparison[];
+  edgeSimilarity?: EdgeSimilarityResult;
+  colorHistogram?: ColorHistogramResult;
   criticalElementsPresent?: boolean;
   contrastPass?: boolean;
   brandMappingApplied?: boolean;
+  minimumPassingScore?: number;
   now?: string;
 }
 
@@ -102,14 +106,21 @@ export function scoreVisualSimulation(
     });
   }
 
-  // Compute Sub-Scores
-  const structuralAlignment = Math.max(0, Math.min(100, avgGeometryScore));
+  // 4. Compute Sub-Scores with structural edge & color histogram weighting
+  let structuralAlignment = avgGeometryScore;
+  if (input.edgeSimilarity) {
+    structuralAlignment = (avgGeometryScore * 0.4) + (input.edgeSimilarity.edgeScore * 0.6);
+  }
+  structuralAlignment = Math.max(0, Math.min(100, structuralAlignment));
+
   const spacingBoxModel = Math.max(0, Math.min(100, pixelMatch * 0.4 + avgGeometryScore * 0.6));
   const typographyHierarchy = Math.max(0, Math.min(100, pixelMatch * 0.7 + (input.contrastPass === false ? 20 : 30)));
-  const styleAndColorHarmony = Math.max(
-    0,
-    Math.min(100, input.brandMappingApplied ? Math.max(85, pixelMatch) : pixelMatch),
-  );
+
+  let styleAndColorHarmony = input.brandMappingApplied ? Math.max(85, pixelMatch) : pixelMatch;
+  if (input.colorHistogram) {
+    styleAndColorHarmony = (styleAndColorHarmony * 0.5) + (input.colorHistogram.colorScore * 0.5);
+  }
+  styleAndColorHarmony = Math.max(0, Math.min(100, styleAndColorHarmony));
 
   const subScores: VisualSubScores = {
     structuralAlignment: Math.round(structuralAlignment * 100) / 100,
@@ -127,10 +138,11 @@ export function scoreVisualSimulation(
       100,
   ) / 100;
 
+  const threshold = input.minimumPassingScore ?? 80;
   const status =
     vetoes.length > 0
       ? "vetoed"
-      : overallScore >= 80
+      : overallScore >= threshold
       ? "pass"
       : "fail";
 

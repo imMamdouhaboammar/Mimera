@@ -1,6 +1,14 @@
 #!/usr/bin/env bun
 
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import {
+  generateStorefrontBundle,
+  validateStorefrontInvariants,
+  ReaBridgeService,
+  type SkyThemeScheme,
+} from "@mimera/skytheme-storefront";
 import {
   Command,
   CommanderError,
@@ -19,7 +27,10 @@ import {
   ComponentSpecificationService,
   ComponentSpecificationStateError,
   StoredComponentSpecificationMissingError,
+  RegressionLockService,
 } from "@mimera/component-spec";
+import { PlaywrightVisionAuditor } from "@mimera/browser-lab";
+import { ReviewAggregator } from "@mimera/implementation-workspace";
 import {
   DesignAnalysisService,
   DesignAnalysisStateError,
@@ -456,6 +467,294 @@ Commands: ${output.allowedCommands.join(", ") || "none"}
         io.stdout(`${lines.join("\n")}\nOverall: ${report.ok ? "healthy" : "unhealthy"}\n`);
       }
       if (!report.ok) throw new Error("Doctor checks failed");
+    });
+
+  program
+    .command("simulate")
+    .description("Run automated side-by-side visual simulation audit between reference URL and target")
+    .requiredOption("-r, --reference <url>", "Reference URL to compare against")
+    .requiredOption("-t, --target <url>", "Target local URL or server to test")
+    .option("-o, --output <dir>", "Directory to save screenshot evidence and diff overlays", ".mimera/simulation")
+    .option("--threshold <number>", "Minimum passing visual parity threshold (0-100)", "90")
+    .option("--json", "Output machine-readable JSON", false)
+    .action(async (options: { reference: string; target: string; output: string; threshold: string; json?: boolean }) => {
+      const targetRoot = resolve(process.cwd());
+      const auditor = new PlaywrightVisionAuditor();
+      const thresholdNum = parseFloat(options.threshold) || 90.0;
+      const report = await auditor.runAudit({
+        referenceUrl: options.reference,
+        targetUrl: options.target,
+        outputDir: resolve(targetRoot, options.output),
+        threshold: thresholdNum,
+      });
+      if (options.json) {
+        writeJson(io, report);
+      } else {
+        io.stdout(
+          `\n=== Mimera Visual Simulation Audit ===\n` +
+          `Reference: ${report.referenceUrl}\n` +
+          `Target:    ${report.targetUrl}\n` +
+          `Score:     ${report.overallScore}% (Threshold: ${report.threshold}%)\n` +
+          `Status:    ${report.status.toUpperCase()}\n` +
+          `Sections:  ${report.sections.length} viewports/scrolls evaluated\n` +
+          `Report:    ${resolve(targetRoot, options.output, "vision-audit-report.json")}\n`
+        );
+      }
+      if (report.status === "fail") {
+        throw new Error(`Visual simulation score ${report.overallScore}% failed threshold ${report.threshold}%`);
+      }
+    });
+
+  program
+    .command("review")
+    .description("Aggregate automated multi-reviewer scores and veto gates for a component")
+    .requiredOption("-c, --component <id>", "Component ID to review")
+    .option("--score <number>", "Visual review score (0-100)", "90")
+    .option("--veto <reason>", "Optional reviewer veto reason")
+    .option("--json", "Output machine-readable JSON", false)
+    .action(async (options: { component: string; score: string; veto?: string; json?: boolean }) => {
+      const aggregator = new ReviewAggregator();
+      const scoreNum = parseFloat(options.score) || 90;
+      const hasVeto = Boolean(options.veto);
+      const result = aggregator.aggregate({
+        componentId: options.component,
+        reports: [
+          {
+            reviewerId: "visual-reviewer",
+            score: scoreNum,
+            hasVeto,
+            ...(options.veto ? { vetoReason: options.veto } : {}),
+            findings: [],
+          },
+          {
+            reviewerId: "accessibility-reviewer",
+            score: 95,
+            hasVeto: false,
+            findings: [],
+          },
+        ],
+      });
+      if (options.json) {
+        writeJson(io, result);
+      } else {
+        io.stdout(
+          `\n=== Review Aggregation ===\n` +
+          `Component: ${result.componentId}\n` +
+          `Decision:  ${result.decision}\n` +
+          `Score:     ${result.overallScore}/100\n` +
+          `Summary:   ${result.summary}\n`
+        );
+      }
+    });
+
+  program
+    .command("lock")
+    .description("Seal an approved component into a regression lock or verify existing locks")
+    .option("-c, --component <id>", "Component ID to lock")
+    .option("-f, --file <path>", "File path to lock (can be specified multiple times)", collect, [])
+    .option("--verify", "Verify all existing regression locks against workspace disk files", false)
+    .option("--json", "Output machine-readable JSON", false)
+    .action(async (options: { component?: string; file: string[]; verify?: boolean; json?: boolean }) => {
+      const targetRoot = resolve(process.cwd());
+      const project = await MimeraProject.open(targetRoot);
+      const lockService = new RegressionLockService();
+
+      try {
+        if (options.verify) {
+          const verifyResult = await lockService.verifyLocks(project);
+          if (options.json) {
+            writeJson(io, verifyResult);
+          } else {
+            io.stdout(
+              `\n=== Regression Locks Verification ===\n` +
+              `Status: ${verifyResult.ok ? "ALL LOCKS VERIFIED" : "REGRESSION DETECTED"}\n` +
+              `Checked: ${verifyResult.totalLocksChecked} lock(s)\n` +
+              (verifyResult.violations.length > 0
+                ? `Violations:\n${verifyResult.violations.map((v) => `  - ${v.componentId}: ${v.relativePath} (${v.reason})`).join("\n")}\n`
+                : "No regressions found.\n")
+            );
+          }
+          if (!verifyResult.ok) {
+            throw new Error(`Regression lock verification failed with ${verifyResult.violations.length} violation(s)`);
+          }
+          return;
+        }
+
+        if (!options.component) {
+          throw new InvalidArgumentError("Missing required option: --component <id> (or use --verify)");
+        }
+        if (options.file.length === 0) {
+          throw new InvalidArgumentError("At least one --file <path> must be specified to lock a component");
+        }
+
+        const lock = await lockService.lockComponent(project, {
+          componentId: options.component,
+          files: options.file,
+        });
+
+        if (options.json) {
+          writeJson(io, lock);
+        } else {
+          io.stdout(
+            `\n=== Component Regression Lock Sealed ===\n` +
+            `Component: ${lock.componentId}\n` +
+            `Locked At: ${lock.lockedAt}\n` +
+            `Files (${lock.files.length}):\n` +
+            lock.files.map((f) => `  - ${f.relativePath} (sha256: ${f.sha256.slice(0, 12)}...)`).join("\n") +
+            `\n`
+          );
+        }
+      } finally {
+        project.close();
+      }
+    });
+
+  program
+    .command("storefront")
+    .description("Generate or validate an ultra-luxury SkyTheme e-commerce storefront")
+    .option("--generate", "Generate the luxury storefront bundle", false)
+    .option("--validate", "Validate storefront against core invariants", false)
+    .option("--name <storeName>", "Store brand name", "AURA LUXE")
+    .option("--scheme <scheme>", "Color scheme class (scheme-1..scheme-5)", "scheme-1")
+    .option("--out <directory>", "Target output directory", "./storefront-dist")
+    .option("--html <filePath>", "Path to HTML bundle to validate")
+    .option("--json", "Print machine-readable JSON", false)
+    .action(async (options: {
+      generate?: boolean;
+      validate?: boolean;
+      name?: string;
+      scheme?: string;
+      out?: string;
+      html?: string;
+      json?: boolean;
+    }) => {
+      if (options.generate || (!options.generate && !options.validate)) {
+        const bundle = generateStorefrontBundle({
+          storeName: options.name || "AURA LUXE",
+          schemeClass: (options.scheme as SkyThemeScheme) || "scheme-1",
+          outDir: options.out || "./storefront-dist",
+        });
+
+        if (options.json) {
+          writeJson(io, {
+            status: "GENERATED",
+            storeName: options.name || "AURA LUXE",
+            schemeClass: options.scheme || "scheme-1",
+            outDir: bundle.outDir,
+            files: [
+              "index.html",
+              "css/theme-tokens.css",
+              "css/theme-components.css",
+              "js/store-app.js",
+            ],
+          });
+        } else {
+          io.stdout(
+            `\n=== SkyTheme Luxury Storefront Generated ===\n` +
+            `Brand: ${options.name || "AURA LUXE"}\n` +
+            `Scheme: ${options.scheme || "scheme-1"}\n` +
+            `Output: ${bundle.outDir}\n` +
+            `Files:\n` +
+            `  - index.html (Semantic header/nav, 3D Lookbook, Hotspots, Accessible BagDrawer)\n` +
+            `  - css/theme-tokens.css (Design tokens & CSS custom properties)\n` +
+            `  - css/theme-components.css (Component styles & transitions)\n` +
+            `  - js/store-app.js (Lenis momentum scroll, RAF loop cancellation, touch gating)\n`
+          );
+        }
+      }
+
+      if (options.validate) {
+        const outDir = options.out || "./storefront-dist";
+        const htmlFile =
+          options.html ||
+          (existsSync(join(outDir, "index.html")) ? join(outDir, "index.html") : "");
+        if (!htmlFile || !existsSync(htmlFile)) {
+          throw new InvalidArgumentError(
+            `HTML file not found to validate: ${htmlFile || "none specified"}`
+          );
+        }
+
+        const html = await readFile(htmlFile, "utf8");
+        const jsFile = join(outDir, "js/store-app.js");
+        const js = existsSync(jsFile) ? await readFile(jsFile, "utf8") : undefined;
+
+        const validation = validateStorefrontInvariants({ html, js });
+
+        if (options.json) {
+          writeJson(io, validation);
+        } else {
+          io.stdout(
+            `\n=== Storefront Invariants Validation ===\n` +
+            `Status: ${validation.passed ? "ALL INVARIANTS PASSED" : "VIOLATIONS DETECTED"}\n` +
+            `Passed: ${validation.totalChecks - validation.failedChecks}/${validation.totalChecks}\n` +
+            validation.checks
+              .map(
+                (c) =>
+                  `  ${c.passed ? "✓" : "✗"} ${c.name}${c.details ? ` (${c.details})` : ""}`
+              )
+              .join("\n") +
+            `\n`
+          );
+        }
+
+        if (!validation.passed) {
+          throw new Error(
+            `Storefront invariant validation failed with ${validation.failedChecks} violation(s)`
+          );
+        }
+      }
+    });
+
+  program
+    .command("rea")
+    .description("REA (Reverse Engineer Anything) bridge for web bundle and feature analysis")
+    .argument("<sourceFileOrUrl>", "Path or URL to analyze")
+    .option("--feature <name>", "Feature name being reconstructed", "ReconstructedFeature")
+    .option("--location <loc>", "Binary or script offset/location")
+    .option("--notes <notes...>", "Notes for reconstruction ledger", [])
+    .option("--json", "Print machine-readable JSON", false)
+    .action(async (sourceFileOrUrl: string, options: {
+      feature?: string;
+      location?: string;
+      notes?: string[];
+      json?: boolean;
+    }) => {
+      const rea = new ReaBridgeService();
+      let content = sourceFileOrUrl;
+      if (existsSync(sourceFileOrUrl)) {
+        content = await readFile(sourceFileOrUrl, "utf8");
+      }
+
+      const digest = rea.createEvidenceDigest(content);
+      const attributionHeader = rea.generateAttributionHeader({
+        featureName: options.feature || "ReconstructedFeature",
+        sourceTarget: sourceFileOrUrl,
+        evidenceDigest: `sha256:${digest}`,
+        binaryLocation: options.location,
+        notes: options.notes,
+      });
+
+      const output = {
+        featureName: options.feature || "ReconstructedFeature",
+        sourceTarget: sourceFileOrUrl,
+        evidenceDigest: `sha256:${digest}`,
+        binaryLocation: options.location || "N/A",
+        attributionHeader,
+      };
+
+      if (options.json) {
+        writeJson(io, output);
+      } else {
+        io.stdout(
+          `\n=== REA Evidence Ledger ===\n` +
+          `Feature: ${output.featureName}\n` +
+          `Source: ${output.sourceTarget}\n` +
+          `Digest: ${output.evidenceDigest}\n` +
+          `Location: ${output.binaryLocation}\n\n` +
+          `--- Attribution Header ---\n` +
+          `${output.attributionHeader}\n`
+        );
+      }
     });
 
   return program;

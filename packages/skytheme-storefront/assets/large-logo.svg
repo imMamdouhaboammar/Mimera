@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGradLarge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06090F"/>
+      <stop offset="40%" stop-color="#0E1322"/>
+      <stop offset="100%" stop-color="#181E34"/>
+    </linearGradient>
+    <linearGradient id="goldGradLarge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2BD"/>
+      <stop offset="35%" stop-color="#E5C158"/>
+      <stop offset="70%" stop-color="#C59B27"/>
+      <stop offset="100%" stop-color="#8F6B10"/>
+    </linearGradient>
+    <radialGradient id="ambientGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.2"/>
+      <stop offset="60%" stop-color="#181E34" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#06090F" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Base Background -->
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="url(#bgGradLarge)" stroke="url(#goldGradLarge)" stroke-width="6"/>
+  
+  <!-- Subtle Internal Radial Glow -->
+  <circle cx="256" cy="220" r="180" fill="url(#ambientGlow)"/>
+
+  <!-- Geometric Luxury Diamond Crown & Architecture -->
+  <g transform="translate(256, 210)" filter="url(#goldGlow)">
+    <!-- Central Brilliant Cut Diamond -->
+    <polygon points="0,-130 55,-70 0,-10 -55,-70" fill="url(#goldGradLarge)"/>
+    <polygon points="0,-130 110,-50 55,-70" fill="#FFF2BD" opacity="0.85"/>
+    <polygon points="0,-130 -110,-50 -55,-70" fill="#8F6B10" opacity="0.85"/>
+    <polygon points="55,-70 110,-50 70,-10 0,-10" fill="#C59B27" opacity="0.7"/>
+    <polygon points="-55,-70 -110,-50 -70,-10 0,-10" fill="#A07916" opacity="0.7"/>
+
+    <!-- High-Jewelry Monogram Ribbons -->
+    <path d="M 75,5 C 75,5 40,-35 -25,-35 C -80,-35 -105,-2 -105,40 C -105,100 15,115 15,155 C 15,185 -15,198 -50,198 C -90,198 -115,165 -115,165" 
+          stroke="url(#goldGradLarge)" stroke-width="26" stroke-linecap="round" fill="none"/>
+    <path d="M -75,40 C -75,40 -40,10 25,10 C 80,10 105,-20 105,-60 C 105,-100 -10,-115 -10,-140" 
+          stroke="url(#goldGradLarge)" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.45"/>
+  </g>
+
+  <!-- Editorial Typography Baseline -->
+  <text x="256" y="420" text-anchor="middle" font-family="'Italiana', 'Playfair Display', serif" font-size="28" font-weight="600" fill="url(#goldGradLarge)" letter-spacing="9">SKYTHEME</text>
+  <text x="256" y="445" text-anchor="middle" font-family="'Bricolage Grotesque', sans-serif" font-size="11" font-weight="500" fill="#A3B1CC" letter-spacing="5">HAUTE COUTURE COMMERCE</text>
+</svg>

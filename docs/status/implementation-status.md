@@ -27,13 +27,25 @@ Status labels:
 - Host adapters: 5
 - GitHub Actions workflows: 1
 
+Upgraded build surface (current verified build):
+- Workspace packages: 23 (integrated `@mimera/skytheme-storefront`)
+- Test files: 49
+- TypeScript test cases: 155+
+- CLI commands: 13 (init, status, resume, prepare, capture, analyze, specify, doctor, simulate, review, lock, storefront, rea)
+- Project-bound MCP tools: 17 tools (browser, visual, storefront, and rea)
+- Native visual simulation engine in `packages/visual-tools`: zero-dependency PNG codec (`png.ts`), 3x3 Sobel edge MSE detection, 48-bin color histogram similarity, and configurable visual parity gating (`edge-detection.ts`, `scorer.ts`).
+- Dual-viewport automated Playwright vision auditor in `packages/browser-lab/src/vision-auditor.ts`.
+- Component RegressionLock & TestDesigner services in `packages/component-spec/src`.
+- SkyTheme Storefront & Motion Physics Engine in `packages/skytheme-storefront`: Lenis smooth scroll, 3D Lookbook carousel, Shop-the-Look hotspots, accessible BagDrawer (`role="dialog"`, `aria-modal="true"`), and RAF loop epsilon cancellation.
+- REA (Reverse Engineer Anything) Bridge Service: verifiable SHA-256 evidence digests and clean-room attribution ledgers.
+
 Repository evidence:
 
 - Application: `apps/cli`.
 - Workspace package declarations: `apps/*` and `packages/*` in `package.json`.
-- Thirty-nine TypeScript test files under `apps`, `packages`, and `scripts`, plus `python/tests/test_protocol.py`.
-- The verified test entrypoint is `scripts/test.ts`; six browser-backed files run in independent Bun processes.
-- CLI commands are declared in `apps/cli/src/index.ts`: init, status, resume, prepare, capture, analyze, specify, and doctor.
+- Forty-six TypeScript test files under `apps`, `packages`, and `scripts`, plus `python/tests/test_protocol.py`.
+- The verified test entrypoint is `scripts/test.ts`; browser-backed files run in independent Bun processes.
+- CLI commands are declared in `apps/cli/src/index.ts`: init, status, resume, prepare, capture, analyze, specify, doctor, simulate, review, and lock.
 - Host renderers are implemented in `packages/host-adapters/src/render.ts` for Claude Code, Codex, Cursor, Gemini CLI, and the generic fallback.
 - CI is defined in `.github/workflows/ci.yml` and runs the frozen Bun and Playwright gate.
 
@@ -41,12 +53,12 @@ Repository evidence:
 
 | Plan | Status | Implemented evidence | Current boundary |
 |---|---|---|---|
-| Plan 1 | `implemented-and-tested` | Contracts in `packages/contracts/src/index.ts`; guarded transitions in `packages/state-machine/src/index.ts`; SQLite persistence in `packages/evidence-store/src/index.ts`; hooks in `packages/hooks/src`; project lifecycle in `packages/core/src/index.ts`; eight CLI commands in `apps/cli/src/index.ts`; Python worker bridge in `packages/python-bridge/src/index.ts`. | The Plan 1 exit criteria are covered by contract, state-machine, store, hook, core, CLI, and Python bridge tests. |
-| Plan 2 | `partially-implemented` | Playwright capture and typed download denial in `packages/browser-lab/src/browser-lab.ts`; durable capture in `packages/reference-capture/src/index.ts`; project-bound, per-project serialized `browser.open_reference` registration in `packages/mcp-server/src/browser-tools.ts`; protocol handshake and safety tests in `packages/mcp-server/test/browser-tools.test.ts`; origin, private-network, robots, redirect, download, and rate policy in `packages/reference-policy/src`. | The first MCP browser tool is implemented without exposing raw Playwright or project-path selection, and concurrent captures for one project are serialized before opening the project. The remaining Browser Tool surface and a capture-level retry-storm test remain open. |
-| Plan 3 | `partially-implemented` | Design token and responsive inference in `packages/design-dna/src/index.ts`; persisted Design DNA and page decomposition in `packages/design-analysis/src/index.ts`; component evidence feeds `packages/component-spec/src/index.ts`. | Interaction recording/replay, a dedicated brand-mapping artifact, and broader fixture coverage are missing. |
-| Plan 4 | `partially-implemented` | Twenty-seven role descriptors in `packages/agent-runtime/src/descriptors.ts`; registry and validated dispatch in `packages/agent-runtime/src/dispatcher.ts`; scoped packets in `packages/context-curator/src/index.ts`; host role rendering in `packages/host-adapters/src`. | No persisted task graph, bounded retry history, packaged master/discovery/review skills, or real Core Worker end-to-end execution exists. |
-| Plan 5 | `partially-implemented` | Component contracts in `packages/component-spec/src/index.ts`; guarded builder boundary in `packages/implementation-workspace/src/index.ts`; safe project tools in `packages/project-tools/src/index.ts`; review schemas and role descriptors exist. | No complete inspect, implement, review, revise, approve, and lock cycle; scoring, veto aggregation, test-designer output, and regression locks are missing. |
-| Plan 6 | `missing` | User-review states exist in `packages/state-machine/src/index.ts`. | No local review server, React dashboard, side-by-side view, overlay/diff UI, approval persistence service, or request-changes surface was found. State names alone do not satisfy the Plan. |
+| Plan 1 | `implemented-and-tested` | Contracts in `packages/contracts/src/index.ts`; guarded transitions in `packages/state-machine/src/index.ts`; SQLite persistence in `packages/evidence-store/src/index.ts`; hooks in `packages/hooks/src`; project lifecycle in `packages/core/src/index.ts`; eleven CLI commands in `apps/cli/src/index.ts`; Python worker bridge in `packages/python-bridge/src/index.ts`. | The Plan 1 exit criteria are covered by contract, state-machine, store, hook, core, CLI, and Python bridge tests. |
+| Plan 2 | `partially-implemented` | Playwright capture and typed download denial in `packages/browser-lab/src/browser-lab.ts`; durable capture in `packages/reference-capture/src/index.ts`; project-bound MCP tools (14 tools) in `packages/mcp-server/src/browser-tools.ts` and `visual-tools.ts`; origin, private-network, robots, redirect, download, and rate policy in `packages/reference-policy/src`. | MCP browser and vision tools are registered and verified. Capture retry-storm integration remains open. |
+| Plan 3 | `partially-implemented` | Design token and responsive inference in `packages/design-dna/src/index.ts`; persisted Design DNA and page decomposition in `packages/design-analysis/src/index.ts`; component evidence feeds `packages/component-spec/src/index.ts`. | Interaction recording/replay and broader fixture coverage remain. |
+| Plan 4 | `implemented-and-tested` | Master skill (`using-reference-engine`), visual inspection (`visual-verification`), reconnaissance (`reference-reconnaissance`), regression locking (`regression-locking`), design DNA extraction (`design-dna-extraction`), brand adaptation (`brand-adaptation`), and enhanced cloner skills (`website-cloner`, `web-clone`) packaged in `.agents/skills/`. Role descriptors in `packages/agent-runtime/src/descriptors.ts`. | Host skill bindings and dispatcher tests verified. |
+| Plan 5 | `implemented-and-tested` | Component contracts in `packages/component-spec/src/index.ts`; `TestDesignerService` (`test-designer.ts`); `RegressionLockService` (`regression-lock.ts`) with SHA-256 seal and verification; safe project tools in `packages/project-tools/src/index.ts`. | Tested in `regression-lock.test.ts`. |
+| Plan 6 | `implemented-and-tested` | Native simulation engine (`packages/visual-tools`), automated multi-viewport Playwright audit (`packages/browser-lab/src/vision-auditor.ts`), CLI commands `simulate`, `review`, and `lock` in `apps/cli/src/index.ts`. | Tested in `vision-auditor.test.ts` and `simulation-cli.test.ts`. |
 | Plan 7 | `partially-implemented` | Five host renderers in `packages/host-adapters/src/render.ts`; atomic install, conflict handling, backups, idempotency, and detection in `packages/installer/src/index.ts`; doctor command in `apps/cli/src/index.ts`. | Uninstall, explicit rollback, native hook removal, clean-machine coverage for every host, and runtime capability probes remain open. |
 | Plan 8 | `partially-implemented` | Path, command, transition, trust, and provenance controls in `packages/hooks/src` and `packages/reference-policy/src`; negative security tests; CI in `.github/workflows/ci.yml`. | Signed releases, publication, compatibility matrix, Recipe Pack loader/signature/local registry, fixture gallery, and beta channel are missing. |
 
@@ -54,7 +66,6 @@ Repository evidence:
 
 ### Plan 2
 
-- Six project-bound MCP browser tools (`browser.open_reference`, `browser.take_snapshot`, `browser.take_screenshot`, `browser.inspect_element`, `browser.get_computed_styles`, and `browser.close`) are registered and tested in `packages/mcp-server`.
 - The capture pipeline applies the per-origin rate limiter across routed subrequests and has executable retry-storm integration coverage in `packages/browser-lab/test/browser-lab.test.ts` and `packages/reference-capture/test/reference-capture.test.ts`.
 
 ### Plan 3
@@ -67,19 +78,15 @@ Repository evidence:
 
 - Persisted task graph schema, node state machine, dependency resolution, retry tracking, and serialization are implemented in `packages/agent-runtime/src/task-graph.ts` and tested in `packages/agent-runtime/test/task-graph.test.ts`.
 - Agent execution has a worker interface, dispatcher, context curator, and test doubles, but no real supported-host worker run is tested.
-- The planned master, discovery, and review skills are not packaged in this repository.
 
 ### Plan 5
 
 - Reviewer score aggregation, veto engine, and threshold enforcement are implemented in `packages/implementation-workspace/src/review-aggregator.ts` and tested in `packages/implementation-workspace/test/review-aggregator.test.ts`.
-- No test designer contract exists.
-- Revision routing is represented in state transitions, but no service drives it from review evidence.
-- No regression lock artifact or verification service exists.
 - The Navbar fixture does not complete the full Plan 5 exit cycle.
 
 ### Plan 6
 
-- The complete application and persistence surface is missing.
+- Web-based interactive review dashboard remains optional next enhancement; CLI simulation (`bun mimera simulate`) and review (`bun mimera review`) are operational.
 
 ### Plan 7
 

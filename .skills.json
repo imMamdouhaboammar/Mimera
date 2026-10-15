@@ -1,0 +1,20 @@
+{
+  "$schema": "https://skills.sh/schema.json",
+  "name": "mimera",
+  "version": "0.1.0",
+  "description": "Local-first agentic reference-driven interface engineering and luxury storefront runtime with REA support",
+  "repository": "https://github.com/imMamdouhaboammar/Mimera",
+  "author": "Mamdouh Aboammar",
+  "license": "MIT",
+  "skill": "SKILL.md",
+  "tags": [
+    "agent-skill",
+    "automation",
+    "developer-tools",
+    "reverse-engineering",
+    "storefront",
+    "visual-parity",
+    "claude-code",
+    "bun"
+  ]
+}

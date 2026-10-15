@@ -185,7 +185,7 @@ test("lists a project-bound browser.open_reference MCP tool without path or poli
 
   const listed = await client.listTools();
 
-  expect(listed.tools).toHaveLength(12);
+  expect(listed.tools).toHaveLength(17);
   const openRefTool = listed.tools.find((t) => t.name === "browser.open_reference");
   expect(openRefTool).toBeDefined();
   expect(openRefTool?.inputSchema).toMatchObject({

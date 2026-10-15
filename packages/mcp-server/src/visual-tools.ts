@@ -6,15 +6,20 @@ import {
   createMaskRegion,
   measureGeometry,
   scoreVisualSimulation,
+  calculateVisualParity,
+  decodePng,
   PixelDiffResultSchema,
   GeometryComparisonSchema,
   ElementGeometrySchema,
   OverlayResultSchema,
   VisualSimulationScoreSchema,
+  VisualParityResultSchema,
   MaskingResultSchema,
   RectSchema,
   MaskReasonSchema,
 } from "@mimera/visual-tools";
+import { PlaywrightVisionAuditor, VisionAuditReportSchema } from "@mimera/browser-lab";
+import { readFile } from "node:fs/promises";
 import { z } from "zod";
 
 export const VISUAL_COMPARE_TOOL = "visual.compare" as const;
@@ -23,6 +28,8 @@ export const VISUAL_MEASURE_GEOMETRY_TOOL = "visual.measure_geometry" as const;
 export const VISUAL_CREATE_OVERLAY_TOOL = "visual.create_overlay" as const;
 export const VISUAL_SCORE_TOOL = "visual.score" as const;
 export const VISUAL_MASK_DYNAMIC_REGION_TOOL = "visual.mask_dynamic_region" as const;
+export const VISUAL_STRUCTURAL_SIMILARITY_TOOL = "visual.structural_similarity" as const;
+export const VISUAL_AUDIT_SIMULATION_TOOL = "visual.audit_simulation" as const;
 
 export function registerVisualTools(server: McpServer): void {
   // 1. visual.compare
@@ -193,6 +200,60 @@ export function registerVisualTools(server: McpServer): void {
       return {
         content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
         structuredContent: { ok: true, tool: VISUAL_MASK_DYNAMIC_REGION_TOOL, ...summary },
+      };
+    },
+  );
+
+  // 7. visual.structural_similarity
+  server.tool(
+    VISUAL_STRUCTURAL_SIMILARITY_TOOL,
+    "Calculates structural edge MSE and color histogram similarity between two image files or screenshot buffers",
+    {
+      referencePath: z.string().min(1),
+      targetPath: z.string().min(1),
+      threshold: z.number().min(0).max(100).default(90.0),
+    },
+    async ({ referencePath, targetPath, threshold }) => {
+      const [refBuf, tgtBuf] = await Promise.all([
+        readFile(referencePath),
+        readFile(targetPath),
+      ]);
+      const refImage = decodePng(new Uint8Array(refBuf));
+      const tgtImage = decodePng(new Uint8Array(tgtBuf));
+
+      const parity = calculateVisualParity(refImage, tgtImage, { threshold });
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(parity, null, 2) }],
+        structuredContent: { ok: true, tool: VISUAL_STRUCTURAL_SIMILARITY_TOOL, ...parity },
+      };
+    },
+  );
+
+  // 8. visual.audit_simulation
+  server.tool(
+    VISUAL_AUDIT_SIMULATION_TOOL,
+    "Conducts automated side-by-side multi-viewport Playwright visual audit (1440px desktop, 390px mobile) at 700px scroll steps with video normalization",
+    {
+      referenceUrl: z.string().url(),
+      targetUrl: z.string().min(1),
+      outputDir: z.string().min(1),
+      threshold: z.number().min(0).max(100).default(90.0),
+      normalizeVideos: z.boolean().default(true),
+    },
+    async ({ referenceUrl, targetUrl, outputDir, threshold, normalizeVideos }) => {
+      const auditor = new PlaywrightVisionAuditor();
+      const report = await auditor.runAudit({
+        referenceUrl,
+        targetUrl,
+        outputDir,
+        threshold,
+        normalizeVideos,
+      });
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(report, null, 2) }],
+        structuredContent: { ok: true, tool: VISUAL_AUDIT_SIMULATION_TOOL, ...report },
       };
     },
   );

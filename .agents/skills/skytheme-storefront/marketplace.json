@@ -1,0 +1,20 @@
+{
+  "name": "skytheme-storefront",
+  "displayName": "SkyTheme Luxury Fashion Storefront",
+  "version": "1.1.0",
+  "description": "Generate complete ultra-luxury fashion e-commerce storefronts with exact SkyTheme styling, Lenis momentum smooth scrolling, 3D Lookbook carousel, Shop-The-Look hotspots, slide-out cart drawer, and 40+ conversion features.",
+  "category": "E-Commerce & Frontend",
+  "author": "Mamdouh Aboammar",
+  "homepage": "https://github.com/imMamdouhaboammar/skytheme-storefront",
+  "icon": "assets/large-logo.svg",
+  "tags": [
+    "ecommerce",
+    "shopify",
+    "luxury",
+    "fashion",
+    "storefront",
+    "lenis",
+    "gsap",
+    "web-components"
+  ]
+}
